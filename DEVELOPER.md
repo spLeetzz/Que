@@ -6,17 +6,6 @@ This guide covers everything you need to know about Que's architecture, API, and
 
 ---
 
-## 📋 Table of Contents
-
-1. [Architecture Overview](#architecture-overview)
-2. [Database Schema](#database-schema)
-3. [API Reference](#api-reference)
-4. [Forms as a Service](#forms-as-a-service)
-5. [Development Workflow](#development-workflow)
-6. [Deployment](#deployment)
-
----
-
 ## 🏗️ Architecture Overview
 
 Que is built as a modern monorepo using **Turborepo** and **pnpm workspaces**, providing a clean separation between frontend, backend, and shared packages.
