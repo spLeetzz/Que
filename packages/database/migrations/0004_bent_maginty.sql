@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "linked_anonymous_id" text;

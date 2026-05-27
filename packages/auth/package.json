@@ -1,0 +1,34 @@
+{
+	"name": "@repo/auth",
+	"version": "1.0.0",
+	"exports": {
+		"./server": {
+			"types": "./server.ts",
+			"default": "./server.ts"
+		},
+		"./client": {
+			"types": "./client.ts",
+			"default": "./client.ts"
+		},
+		"./schema": {
+			"types": "./schema.ts",
+			"default": "./schema.ts"
+		},
+		"./validation": {
+			"types": "./validation.ts",
+			"default": "./validation.ts"
+		}
+	},
+	"dependencies": {
+		"@repo/database": "workspace:*",
+		"@repo/logger": "workspace:*",
+		"@repo/services": "workspace:*",
+		"better-auth": "^1.6.11",
+		"drizzle-orm": "^0.45.2",
+		"zod": "^4.3.5"
+	},
+	"devDependencies": {
+		"@repo/typescript-config": "workspace:*",
+		"typescript": "^5.9.3"
+	}
+}
