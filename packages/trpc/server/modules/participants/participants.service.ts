@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@repo/database";
 import { events, participants } from "@repo/database/schema";
 import { eq, and, isNull, ne } from "drizzle-orm";
+import { appEmitter } from "../../utils/emitter";
 
 import type { CreateParticipantInput, UpdateParticipantInput } from "./participants.schema";
 import type { User } from "../../shared/types";
@@ -124,6 +125,8 @@ export async function createParticipant(data: CreateParticipantInput, user: User
 			message: "Failed to create participant",
 		});
 	}
+
+	appEmitter.emit("participant:joined", { eventId: data.eventId, participant });
 
 	return participant;
 }

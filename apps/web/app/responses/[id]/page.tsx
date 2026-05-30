@@ -9,6 +9,7 @@ import { Separator } from "~/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Trash2, User, Calendar, FileText, Hash, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { getEventTabPath } from "~/lib/event-paths";
 
 export default function ResponseDetailPage() {
   const params = useParams();
@@ -222,7 +223,7 @@ export default function ResponseDetailPage() {
 
       {/* Event link */}
       <div className="flex justify-center pb-4">
-        <Link href={`/events/${response.eventId}/results`}>
+        <Link href={getEventTabPath({ id: response.eventId }, "results")}>
           <Button variant="outline" className="rounded-xl border-border/60 font-semibold gap-2 h-10">
             <ExternalLink className="size-4" />
             View All Responses for This Event

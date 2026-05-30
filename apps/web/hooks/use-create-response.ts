@@ -11,8 +11,11 @@ export function useCreateResponse() {
 		},
 		onSuccess: (data) => {
 			toast.success("Response submitted successfully");
-						utils.responses.listByEvent.invalidate({ eventId: data.eventId });
-						utils.events.getByIdOrSlug.invalidate({ identifier: data.eventId });
+			utils.responses.listByEvent.invalidate({ eventId: data.eventId });
+			utils.events.getByIdOrSlug.invalidate({ identifier: data.eventId });
+			utils.items.listByEvent.invalidate({ eventId: data.eventId });
+			utils.analytics.getFullAnalytics.invalidate({ eventId: data.eventId });
+			utils.analytics.getOverview.invalidate({ eventId: data.eventId });
 		},
 	});
 

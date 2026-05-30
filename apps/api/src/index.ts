@@ -6,6 +6,7 @@ import { toNodeHandler } from "better-auth/node";
 import { env } from "./env";
 import { verifyDbConnection } from "@repo/database";
 import { setupSocket } from "./socket";
+import { registerResponseNotificationListeners } from "@repo/trpc/server";
 
 const authHandler = toNodeHandler(auth);
 export const allowedOrigin = env.NODE_ENV === "production" ? env.WEB_URL : "http://localhost:3000";
@@ -38,6 +39,8 @@ async function init() {
 
       expressApplication(req, res);
     });
+
+    registerResponseNotificationListeners(env.WEB_URL);
 
     // Initialize WebSockets
     setupSocket(server);

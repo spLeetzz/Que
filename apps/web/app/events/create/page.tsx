@@ -37,7 +37,7 @@ export default function CreateEventPage() {
   const createMutation = trpc.events.create.useMutation({
     onSuccess: (data) => {
       toast.success("Event created!");
-      router.push(`/events/${data.id}/edit`);
+      router.push(`/events/${data.slug || data.id}?tab=manage`);
     },
     onError: (error) => toast.error(error.message || "Failed to create event"),
   });
@@ -45,11 +45,23 @@ export default function CreateEventPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) { toast.error("Please enter a title"); return; }
-    createMutation.mutate(formData);
+    const { redirectUrl, slug, receiveEmails, ...rest } = formData;
+    const canEmail = (formData.type === "form" || formData.type === "poll") && formData.authRequired;
+    createMutation.mutate({
+      ...rest,
+      slug: slug.trim() || null,
+      redirectUrl: redirectUrl.trim() || null,
+      receiveEmails: canEmail ? receiveEmails : false,
+    });
   };
 
   const set = (key: keyof typeof formData, value: any) =>
-    setFormData(prev => ({ ...prev, [key]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === "authRequired" && !value) next.receiveEmails = false;
+      if (key === "type" && value === "banter") next.receiveEmails = false;
+      return next;
+    });
 
   return (
     <div className="min-h-screen bg-background">

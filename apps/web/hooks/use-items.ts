@@ -2,11 +2,12 @@ import { trpc } from "~/trpc/client";
 
 export function useItems(
 	eventId: string,
-	options?: { enablePolling?: boolean }
+	options?: { enablePolling?: boolean; enabled?: boolean }
 ) {
 	const query = trpc.items.listByEvent.useQuery(
 		{ eventId },
 		{
+			enabled: (options?.enabled ?? true) && !!eventId,
 			retry: 1,
 			staleTime: options?.enablePolling ? 0 : 5 * 60 * 1000, // No stale time for polling
 			refetchInterval: options?.enablePolling ? 3000 : false, // Poll every 3 seconds for banter

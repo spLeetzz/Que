@@ -1,6 +1,5 @@
 import { router, publicProcedure } from "../../trpc";
-import { TRPCError } from "@trpc/server";
-import { getAnalyticsSchema, getIndividualResponsesSchema, exportAnalyticsSchema } from "./analytics.schema";
+import { getAnalyticsSchema, getIndividualResponsesSchema } from "./analytics.schema";
 import {
 	getOverviewMetrics,
 	getResponseTimeline,
@@ -11,47 +10,33 @@ import {
 	getIndividualResponses,
 } from "./analytics.service";
 
-function requireUser(ctx: any) {
-	if (!ctx.user) {
-		throw new TRPCError({ code: "UNAUTHORIZED", message: "You must be signed in to view analytics" });
-	}
-	return ctx.user;
-}
-
 export const analyticsRouter = router({
 	getOverview: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getOverviewMetrics(input.eventId, user.id);
+		return getOverviewMetrics(input.eventId, ctx.user?.id ?? null);
 	}),
 
 	getTimeline: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getResponseTimeline(input.eventId, user.id);
+		return getResponseTimeline(input.eventId, ctx.user?.id ?? null);
 	}),
 
 	getAbandonmentFunnel: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getAbandonmentFunnel(input.eventId, user.id);
+		return getAbandonmentFunnel(input.eventId, ctx.user?.id ?? null);
 	}),
 
 	getQuestionAnalytics: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getQuestionAnalytics(input.eventId, user.id);
+		return getQuestionAnalytics(input.eventId, ctx.user?.id ?? null);
 	}),
 
 	getParticipantJourneys: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getParticipantJourneys(input.eventId, user.id);
+		return getParticipantJourneys(input.eventId, ctx.user?.id ?? null);
 	}),
 
 	getIndividualResponses: publicProcedure.input(getIndividualResponsesSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getIndividualResponses(input.eventId, user.id, input.page, input.pageSize);
+		return getIndividualResponses(input.eventId, ctx.user?.id ?? null, input.page, input.pageSize);
 	}),
 
 	getFullAnalytics: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
-		const user = requireUser(ctx);
-		return getFullAnalytics(input.eventId, user.id);
+		return getFullAnalytics(input.eventId, ctx.user?.id ?? null);
 	}),
 });
 

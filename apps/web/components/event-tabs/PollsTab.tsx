@@ -16,9 +16,10 @@ interface PollsTabProps {
   eventId: string;
   items: any[];
   participantId: string | null;
+  isCreator?: boolean;
 }
 
-export function PollsTab({ eventId, items, participantId }: PollsTabProps) {
+export function PollsTab({ eventId, items, participantId, isCreator = false }: PollsTabProps) {
   const utils = trpc.useUtils();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
@@ -137,7 +138,8 @@ export function PollsTab({ eventId, items, participantId }: PollsTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Create Poll Button */}
+      {/* Create poll — creators only (matches backend permission) */}
+      {isCreator && (
       <div className="flex justify-between items-center bg-card/45 backdrop-blur-sm border rounded-xl p-4 shadow-sm">
         <div>
           <h3 className="text-lg font-bold flex items-center gap-2">
@@ -217,6 +219,7 @@ export function PollsTab({ eventId, items, participantId }: PollsTabProps) {
           </DialogContent>
         </Dialog>
       </div>
+      )}
 
       {/* Polls List */}
       {polls.length === 0 ? (
@@ -224,7 +227,11 @@ export function PollsTab({ eventId, items, participantId }: PollsTabProps) {
           <CardContent className="space-y-2">
             <BarChart3 className="w-12 h-12 text-muted-foreground/40 mx-auto" />
             <p className="font-semibold text-sm">No live polls active yet</p>
-            <p className="text-xs">Create a quick poll to start collecting votes in real-time!</p>
+            <p className="text-xs">
+              {isCreator
+                ? "Create a quick poll to start collecting votes in real-time!"
+                : "The host hasn't started a poll yet — check back soon."}
+            </p>
           </CardContent>
         </Card>
       ) : (

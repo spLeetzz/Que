@@ -1,6 +1,7 @@
 "use client";
 
 import { trpc } from "~/trpc/client";
+import { getEventTabPath } from "~/lib/event-paths";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -92,7 +93,7 @@ export function useDuplicateEvent() {
 		onSuccess: (newEvent) => {
 			toast.success(`Duplicated event successfully as "${newEvent.title}"`);
 			utils.events.listMine.invalidate();
-			router.push(`/events/${newEvent.id}/edit`);
+			router.push(getEventTabPath(newEvent, "manage"));
 		},
 		onError: (err) => {
 			toast.error(err.message || "Failed to duplicate event");

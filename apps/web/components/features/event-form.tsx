@@ -11,6 +11,7 @@ import { Label } from "~/components/ui/label";
 import { useCreateEvent } from "~/hooks/use-create-event";
 import type { EventType } from "@repo/trpc/server/modules/events";
 import { Sparkles } from "lucide-react";
+import { getEventTabPath } from "~/lib/event-paths";
 
 const quickCreateSchema = z.object({
 	title: z.string().min(1, "Title is required").max(200, "Title must be 200 characters or less"),
@@ -52,7 +53,7 @@ export function EventForm({ onSuccess }: EventFormProps) {
 				expiresAt: null,
 				theme: null,
 			});
-			router.push(`/events/${result.id}/edit`);
+			router.push(getEventTabPath(result, "manage"));
 			onSuccess?.();
 		} catch {
 			// Error handling is handled by mutations

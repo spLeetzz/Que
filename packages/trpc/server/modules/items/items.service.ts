@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@repo/database";
 import { events, items, participants } from "@repo/database/schema";
 import { eq, and, isNull, ne, desc, max } from "drizzle-orm";
+import { appEmitter } from "../../utils/emitter";
+import { assertEventAcceptsResponses } from "../../utils/event-response-guards";
 
 import type { CreateItemInput, UpdateItemInput, QuestionType } from "./items.schema";
 import type { User } from "../../shared/types";
@@ -210,14 +212,20 @@ async function calculateNextOrder(eventId: string): Promise<number> {
 
 export async function createItem(data: CreateItemInput, user: User) {
 	const event = await getEventOrThrow(data.eventId);
-	validateEventCreator(event.creatorId, user.id);
 
-	// Validate chat items can only be in banter events
-	if (data.category === "chat" && event.type !== "banter") {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Chat items can only be created in banter events",
-		});
+	if (data.category === "question") {
+		validateEventCreator(event.creatorId, user.id);
+	} else if (data.category === "chat") {
+		assertEventAcceptsResponses(event, user);
+
+		if (event.type !== "banter") {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Chat items can only be created in banter events",
+			});
+		}
+	} else {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid item category" });
 	}
 
 	// Validate metadata for question items
@@ -231,27 +239,34 @@ export async function createItem(data: CreateItemInput, user: User) {
 	// Handle participant for chat items
 	let participantId = data.participantId ?? null;
 	if (data.category === "chat") {
-		// Ensure participant exists or create one
+		if (!participantId) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "participantId is required to send chat messages",
+			});
+		}
+
 		const [participant] = await db
 			.select()
 			.from(participants)
-			.where(and(eq(participants.eventId, data.eventId), eq(participants.userId, user.id)))
+			.where(
+				and(eq(participants.id, participantId), eq(participants.eventId, data.eventId)),
+			)
 			.limit(1);
 
 		if (!participant) {
-			const [newParticipant] = await db
-				.insert(participants)
-				.values({
-					eventId: data.eventId,
-					userId: user.id,
-					alias: user.name || user.email || "Anonymous",
-					joinedAt: new Date(),
-				})
-				.returning();
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "You must join the room before sending messages",
+			});
+		}
 
-			participantId = newParticipant?.id ?? null;
-		} else {
-			participantId = participant.id;
+		// Logged-in users may only post as their own participant record
+		if (!user.isAnonymous && participant.userId && participant.userId !== user.id) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "You cannot send messages as another participant",
+			});
 		}
 	}
 
@@ -275,6 +290,8 @@ export async function createItem(data: CreateItemInput, user: User) {
 			message: "Failed to create item",
 		});
 	}
+
+	appEmitter.emit("item:created", { eventId: item.eventId, item });
 
 	return item;
 }
@@ -325,6 +342,8 @@ export async function updateItem(itemId: string, data: UpdateItemInput, userId: 
 		});
 	}
 
+	appEmitter.emit("item:updated", { eventId: updated.eventId, item: updated });
+
 	return updated;
 }
 
@@ -350,6 +369,8 @@ export async function reorderItem(itemId: string, newOrder: number, userId: stri
 		});
 	}
 
+	appEmitter.emit("item:updated", { eventId: updated.eventId, item: updated });
+
 	return updated;
 }
 
@@ -366,6 +387,8 @@ export async function deleteItem(itemId: string, userId: string) {
 	}
 
 	await db.delete(items).where(eq(items.id, itemId));
+
+	appEmitter.emit("item:deleted", { eventId: item.eventId, itemId });
 
 	return { success: true, message: "Item deleted successfully" };
 }

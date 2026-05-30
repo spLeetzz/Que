@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -33,14 +34,27 @@ import {
 	useCompleteEvent,
 	useDuplicateEvent,
 } from "~/hooks/use-event-actions";
+import { copyToClipboard } from "~/lib/clipboard";
+import { getEventPath, getEventTabPath } from "~/lib/event-paths";
+import { cn } from "~/lib/utils";
 
 interface EventCardProps {
-	event: any;
+	event: {
+		id: string;
+		slug?: string | null;
+		title: string;
+		description?: string | null;
+		type: string;
+		status: string;
+		responseCount?: number;
+		createdAt: Date | string;
+	};
 	onDelete: () => void;
 }
 
 export function EventCard({ event, onDelete }: EventCardProps) {
 	const router = useRouter();
+	const eventPath = getEventPath(event);
 
 	const { publish } = usePublishEvent(event.id);
 	const { unpublish } = useUnpublishEvent(event.id);
@@ -48,11 +62,18 @@ export function EventCard({ event, onDelete }: EventCardProps) {
 	const { complete } = useCompleteEvent(event.id);
 	const { duplicate } = useDuplicateEvent();
 
-	const handleCopyLink = () => {
-		const publicUrl = `${window.location.origin}/events/${event.slug || event.id}`;
-		navigator.clipboard.writeText(publicUrl);
-		toast.success("Event link copied to clipboard!");
+	const handleCopyLink = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		const url = `${window.location.origin}${eventPath}`;
+		try {
+			await copyToClipboard(url);
+			toast.success("Event link copied!");
+		} catch {
+			toast.error("Could not copy link", { description: url });
+		}
 	};
+
+	const openManage = () => router.push(getEventTabPath(event, "manage"));
 
 	const getTypeColor = (type: string) => {
 		switch (type) {
@@ -82,133 +103,195 @@ export function EventCard({ event, onDelete }: EventCardProps) {
 		}
 	};
 
-	const formatDate = (date: Date) => {
-		return new Intl.DateTimeFormat("en-US", {
+	const formatDate = (date: Date | string) =>
+		new Intl.DateTimeFormat("en-US", {
 			month: "short",
 			day: "numeric",
 			year: "numeric",
 		}).format(new Date(date));
-	};
 
 	return (
-		<Card className="card-hover border border-border/50 shadow-sm relative overflow-hidden flex flex-col justify-between h-[210px] bg-card">
-			{/* Color indicator stripe depending on status */}
-			<div className={`absolute top-0 left-0 right-0 h-1.2 transition-colors duration-300 ${
-				event.status === "published" ? "bg-green-500" :
-				event.status === "draft" ? "bg-amber-500" :
-				event.status === "completed" ? "bg-blue-500" :
-				"bg-slate-400"
-			}`} />
-			
-			<CardHeader className="pt-6 pb-2">
-				<div className="flex items-start justify-between">
-					<div className="flex-1 min-w-0 pr-3">
-						<CardTitle className="truncate text-lg font-bold tracking-tight text-foreground" title={event.title}>
+		<Card
+			role="button"
+			tabIndex={0}
+			onClick={openManage}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					openManage();
+				}
+			}}
+			className={cn(
+				"card-hover border border-border/50 shadow-sm relative overflow-hidden flex flex-col justify-between",
+				"bg-card cursor-pointer group transition-all hover:border-primary/30 hover:shadow-md",
+				"min-h-[220px]",
+			)}
+		>
+			<div
+				className={cn(
+					"absolute top-0 left-0 right-0 h-1 transition-colors",
+					event.status === "published"
+						? "bg-green-500"
+						: event.status === "draft"
+							? "bg-amber-500"
+							: event.status === "completed"
+								? "bg-blue-500"
+								: "bg-slate-400",
+				)}
+			/>
+
+			<CardHeader className="pt-6 pb-2 flex-1">
+				<div className="flex items-start justify-between gap-2">
+					<div className="flex-1 min-w-0">
+						<CardTitle
+							className="truncate text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors"
+							title={event.title}
+						>
 							{event.title}
 						</CardTitle>
-						<CardDescription className="line-clamp-2 mt-1 text-sm leading-relaxed text-muted-foreground min-h-[2.5rem]">
-							{event.description || "No description provided."}
+						<CardDescription className="line-clamp-2 mt-1.5 text-sm leading-relaxed text-muted-foreground">
+							{event.description || "No description yet — click to add questions and settings."}
 						</CardDescription>
 					</div>
+					<Badge
+						variant="outline"
+						className={cn(
+							"text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase shrink-0",
+							getStatusColor(event.status),
+						)}
+					>
+						{event.status}
+					</Badge>
+				</div>
+			</CardHeader>
+
+			<CardContent className="pt-0 pb-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+				<div className="flex items-center gap-1.5 flex-wrap">
+					<Badge
+						variant="outline"
+						className={cn(
+							"text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase",
+							getTypeColor(event.type),
+						)}
+					>
+						{event.type}
+					</Badge>
+					{event.responseCount !== undefined && (
+						<span className="text-[11px] text-muted-foreground font-medium">
+							{event.responseCount} {event.responseCount === 1 ? "response" : "responses"}
+						</span>
+					)}
+					<span className="text-[11px] text-muted-foreground font-medium inline-flex items-center gap-1 ml-auto">
+						<CalendarDays className="size-3.5" />
+						{formatDate(event.createdAt)}
+					</span>
+				</div>
+
+				<div className="flex items-center gap-2">
+					<Button asChild variant="outline" size="sm" className="flex-1 rounded-xl text-xs font-semibold h-9">
+						<Link href={eventPath}>
+							<ExternalLinkIcon className="size-3.5 mr-1.5" />
+							Open
+						</Link>
+					</Button>
+					<Button asChild size="sm" className="flex-1 rounded-xl text-xs font-semibold h-9">
+						<Link href={getEventTabPath(event, "manage")}>
+							<EditIcon className="size-3.5 mr-1.5" />
+							Manage
+						</Link>
+					</Button>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" size="icon" className="shrink-0 rounded-xl hover:bg-secondary border border-transparent hover:border-border/30 size-8 transition-all">
-								<MoreVerticalIcon className="size-4 text-muted-foreground" />
-								<span className="sr-only">Open menu</span>
+							<Button
+								type="button"
+								variant="outline"
+								size="icon"
+								className="shrink-0 rounded-xl size-9"
+								aria-label="More actions"
+							>
+								<MoreVerticalIcon className="size-4" />
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-[190px] rounded-xl shadow-lg border border-border/60">
-							<DropdownMenuItem onClick={() => router.push(`/events/${event.id}/edit`)} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
-								<EditIcon className="size-4 text-muted-foreground" />
-								<span>Edit Settings</span>
+						<DropdownMenuContent align="end" className="w-[200px] rounded-xl">
+							<DropdownMenuItem asChild>
+								<Link href={getEventTabPath(event, "settings")} className="cursor-pointer gap-2">
+									<EditIcon className="size-4" />
+									Settings
+								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => router.push(`/events/${event.id}`)} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
-								<ExternalLinkIcon className="size-4 text-muted-foreground" />
-								<span>View Public Page</span>
+							<DropdownMenuItem asChild>
+								<Link href={getEventTabPath(event, "results")} className="cursor-pointer gap-2">
+									<BarChartIcon className="size-4" />
+									Results
+								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => router.push(`/events/${event.id}/results`)} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
-								<BarChartIcon className="size-4 text-muted-foreground" />
-								<span>Results</span>
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={handleCopyLink} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
-								<CopyIcon className="size-4 text-muted-foreground" />
-								<span>Copy Link</span>
+							<DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer gap-2">
+								<CopyIcon className="size-4" />
+								Copy link
 							</DropdownMenuItem>
 
-							<DropdownMenuSeparator className="my-1" />
+							<DropdownMenuSeparator />
 
-							{/* Dynamic state machine transitions */}
 							{event.status === "draft" && (
-								<DropdownMenuItem onClick={publish} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-green-600 focus:text-green-600 focus:bg-green-500/10">
+								<DropdownMenuItem
+									onClick={(e) => {
+										e.stopPropagation();
+										publish();
+									}}
+									className="cursor-pointer gap-2 text-green-600"
+								>
 									<PlayIcon className="size-4" />
-									<span>Publish Live</span>
+									Publish live
 								</DropdownMenuItem>
 							)}
-
 							{event.status === "published" && (
 								<>
-									<DropdownMenuItem onClick={unpublish} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-500/10">
+									<DropdownMenuItem onClick={unpublish} className="cursor-pointer gap-2 text-amber-600">
 										<PauseIcon className="size-4" />
-										<span>Pause (Draft)</span>
+										Pause (draft)
 									</DropdownMenuItem>
-									<DropdownMenuItem onClick={complete} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-blue-600 focus:text-blue-600 focus:bg-blue-500/10">
+									<DropdownMenuItem onClick={complete} className="cursor-pointer gap-2 text-blue-600">
 										<CheckCircleIcon className="size-4" />
-										<span>Mark Completed</span>
+										Mark completed
 									</DropdownMenuItem>
-									<DropdownMenuItem onClick={archive} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-slate-500 focus:text-slate-500 focus:bg-slate-500/10">
+									<DropdownMenuItem onClick={archive} className="cursor-pointer gap-2">
 										<ArchiveIcon className="size-4" />
-										<span>Archive Event</span>
+										Archive
 									</DropdownMenuItem>
 								</>
 							)}
-
 							{event.status === "archived" && (
-								<DropdownMenuItem onClick={publish} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-green-600 focus:text-green-600 focus:bg-green-500/10">
+								<DropdownMenuItem onClick={publish} className="cursor-pointer gap-2 text-green-600">
 									<PlayIcon className="size-4" />
-									<span>Restore (Publish)</span>
+									Restore & publish
 								</DropdownMenuItem>
 							)}
-
 							{event.status === "completed" && (
-								<DropdownMenuItem onClick={archive} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2 text-slate-500 focus:text-slate-500 focus:bg-slate-500/10">
+								<DropdownMenuItem onClick={archive} className="cursor-pointer gap-2">
 									<ArchiveIcon className="size-4" />
-									<span>Archive Event</span>
+									Archive
 								</DropdownMenuItem>
 							)}
 
-							<DropdownMenuItem onClick={() => duplicate(event.id)} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
-								<FilesIcon className="size-4 text-muted-foreground" />
-								<span>Duplicate Event</span>
+							<DropdownMenuItem
+								onClick={() => duplicate(event.id)}
+								className="cursor-pointer gap-2"
+							>
+								<FilesIcon className="size-4" />
+								Duplicate
 							</DropdownMenuItem>
 
-							<DropdownMenuSeparator className="my-1" />
-							<DropdownMenuItem variant="destructive" onClick={onDelete} className="rounded-lg m-1 px-3 py-2 cursor-pointer gap-2">
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								variant="destructive"
+								onClick={onDelete}
+								className="cursor-pointer gap-2"
+							>
 								<TrashIcon className="size-4" />
-								<span>Delete Event</span>
+								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-				</div>
-			</CardHeader>
-			<CardContent className="pt-0">
-				<div className="flex items-center justify-between gap-2 border-t border-border/40 pt-3 mb-3">
-					<div className="flex items-center gap-1.5 flex-wrap">
-						<Badge variant="outline" className={`text-[10px] font-bold px-2 py-0.5 rounded-lg tracking-wide uppercase ${getTypeColor(event.type)}`}>
-							{event.type}
-						</Badge>
-						<Badge variant="outline" className={`text-[10px] font-bold px-2 py-0.5 rounded-lg tracking-wide uppercase ${getStatusColor(event.status)}`}>
-							{event.status}
-						</Badge>
-						{event.responseCount !== undefined && (
-							<span className="text-[11px] text-muted-foreground font-semibold ml-1">
-								• {event.responseCount} {event.responseCount === 1 ? "response" : "responses"}
-							</span>
-						)}
-					</div>
-					<div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium shrink-0">
-						<CalendarDays className="size-3.5" />
-						<span>{formatDate(event.createdAt)}</span>
-					</div>
 				</div>
 			</CardContent>
 		</Card>

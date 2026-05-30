@@ -1,18 +1,41 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "~/trpc/client";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Loader2, Plus, BarChart3, Users, FileText, ArrowRight, Eye, Edit3, Compass } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
+import { Loader2, Plus, BarChart3, FileText, ArrowRight, Compass } from "lucide-react";
+import { EventCard } from "~/components/features/event-card";
+import { useDeleteEvent } from "~/hooks/use-delete-event";
+import { getEventPath } from "~/lib/event-paths";
 
 export default function DashboardPage() {
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
   const { data: myEventsData, isLoading } = trpc.events.listMine.useQuery({ page: 1, pageSize: 20 });
   const { data: publicEventsData } = trpc.events.listPublic.useQuery({ page: 1, pageSize: 20 });
+  const deleteEvent = useDeleteEvent(deleteEventId ?? "");
 
   const myEvents = myEventsData?.events || [];
   const publicEvents = publicEventsData?.events || [];
+
+  const handleDeleteConfirm = async () => {
+    if (deleteEventId) {
+      await deleteEvent.mutateAsync();
+      setDeleteEventId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -121,52 +144,11 @@ export default function DashboardPage() {
           {myEvents && myEvents.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {myEvents.map((event) => (
-                <Card key={event.id} className="shadow-xl border-border bg-card/90 backdrop-blur-md flex flex-col justify-between h-[210px]">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <CardTitle className="text-lg font-bold leading-tight truncate text-foreground pr-2" title={event.title}>
-                        {event.title}
-                      </CardTitle>
-                      <Badge className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                        event.status === "published" 
-                          ? "bg-green-500/10 text-green-500 border-green-500/25" 
-                          : "bg-slate-500/10 text-slate-500 border-slate-500/25"
-                      }`}>
-                        {event.status}
-                      </Badge>
-                    </div>
-                    <CardDescription className="line-clamp-2 text-sm mt-1">
-                      {event.description || "No description provided."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-4">
-                    <div className="flex gap-1.5 flex-wrap">
-                      <Badge variant="outline" className={`rounded-lg text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 ${getTypeBadgeStyles(event.type)}`}>
-                        {event.type}
-                      </Badge>
-                      <Badge variant="outline" className="rounded-lg text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 border-border/40 bg-background/50">
-                        {event.visibility}
-                      </Badge>
-                      <Badge variant="outline" className="rounded-lg text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 border-border/40 bg-background/50">
-                        {event.mode}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link href={`/events/${event.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full rounded-xl text-xs font-semibold hover:bg-secondary">
-                          <Eye className="w-3.5 h-3.5 mr-1.5" />
-                          View
-                        </Button>
-                      </Link>
-                      <Link href={`/events/${event.id}/edit`} className="flex-1">
-                        <Button size="sm" className="w-full rounded-xl text-xs font-semibold shadow-sm">
-                          <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-                          Edit
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onDelete={() => setDeleteEventId(event.id)}
+                />
               ))}
             </div>
           ) : (
@@ -196,10 +178,11 @@ export default function DashboardPage() {
           {publicEvents && publicEvents.length > 0 ? (
             <div className="space-y-3">
               {publicEvents.slice(0, 5).map((event) => (
-                <Card key={event.id} className="shadow-xl border-border bg-card/90 backdrop-blur-md p-4 relative overflow-hidden">
+                <Link key={event.id} href={getEventPath(event)} className="block">
+                <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md p-4 relative overflow-hidden cursor-pointer hover:border-primary/30 transition-colors group">
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-1">
-                      <h4 className="font-bold text-sm text-foreground truncate max-w-[170px]" title={event.title}>
+                      <h4 className="font-bold text-sm text-foreground truncate max-w-[170px] group-hover:text-primary transition-colors" title={event.title}>
                         {event.title}
                       </h4>
                       <Badge variant="outline" className={`rounded-lg text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.25 ${getTypeBadgeStyles(event.type)}`}>
@@ -211,14 +194,13 @@ export default function DashboardPage() {
                         {event.description}
                       </p>
                     )}
-                    <Link href={`/events/${event.id}`} className="mt-2">
-                      <Button variant="secondary" size="sm" className="w-full rounded-xl text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary transition-all">
-                        Participate
-                        <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                      </Button>
-                    </Link>
+                    <span className="mt-2 inline-flex items-center text-xs font-semibold text-primary">
+                      Participate
+                      <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
                   </div>
                 </Card>
+                </Link>
               ))}
             </div>
           ) : (
@@ -229,6 +211,23 @@ export default function DashboardPage() {
         </div>
       </div>
       </div>
+
+      <AlertDialog open={!!deleteEventId} onOpenChange={(open) => !open && setDeleteEventId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the event and all responses. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteEvent.isLoading}>
+              {deleteEvent.isLoading ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

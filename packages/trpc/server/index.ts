@@ -32,3 +32,4 @@ export { protectedProcedure, authMiddleware } from "./middlewares/auth";
 export { eventProcedure, eventExistsMiddleware, creatorProcedure, creatorOnlyMiddleware } from "./middlewares/event";
 export { rateLimitedProcedure, rateLimiterMiddleware } from "./middlewares/rate-limit";
 export { appEmitter } from "./utils/emitter";
+export { registerResponseNotificationListeners } from "./listeners/response-notifications";

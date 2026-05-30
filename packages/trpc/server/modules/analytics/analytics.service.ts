@@ -22,13 +22,15 @@ async function getEventOrThrow(eventId: string) {
 	return event;
 }
 
-function validateEventCreator(eventCreatorId: string, userId: string): void {
-	if (eventCreatorId !== userId) {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message: "You are not authorized to view analytics for this event",
-		});
-	}
+function validateAnalyticsAccess(event: { creatorId: string; resultVisibility: string }, userId: string | null): void {
+	if (event.creatorId === userId) return;
+
+	if (event.resultVisibility === "all") return;
+
+	throw new TRPCError({
+		code: "FORBIDDEN",
+		message: "You are not authorized to view analytics for this event",
+	});
 }
 
 /**
@@ -161,9 +163,9 @@ export interface OverviewMetrics {
 	responseRate: number;
 }
 
-export async function getOverviewMetrics(eventId: string, userId: string): Promise<OverviewMetrics> {
+export async function getOverviewMetrics(eventId: string, userId: string | null): Promise<OverviewMetrics> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	if (event.type !== "banter") {
 		const [res] = await db
@@ -231,9 +233,9 @@ export interface ResponseTimelinePoint {
 	participantCount: number;
 }
 
-export async function getResponseTimeline(eventId: string, userId: string): Promise<ResponseTimelinePoint[]> {
+export async function getResponseTimeline(eventId: string, userId: string | null): Promise<ResponseTimelinePoint[]> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	const timeline = await db
 		.select({
@@ -306,10 +308,10 @@ export interface AbandonmentFunnelStep {
 
 export async function getAbandonmentFunnel(
 	eventId: string,
-	userId: string,
+	userId: string | null,
 ): Promise<AbandonmentFunnelStep[]> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	// Get all questions in order
 	const questions = await db
@@ -423,9 +425,9 @@ export interface QuestionAnalytics {
 	}[];
 }
 
-export async function getQuestionAnalytics(eventId: string, userId: string): Promise<QuestionAnalytics[]> {
+export async function getQuestionAnalytics(eventId: string, userId: string | null): Promise<QuestionAnalytics[]> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	// Get all questions
 	const questions = await db
@@ -579,10 +581,10 @@ export interface ParticipantJourney {
 
 export async function getParticipantJourneys(
 	eventId: string,
-	userId: string,
+	userId: string | null,
 ): Promise<ParticipantJourney[]> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	// Get total questions
 	const [questionResult] = await db
@@ -759,13 +761,13 @@ export interface IndividualResponsesResult {
 
 export async function getIndividualResponses(
 	eventId: string,
-	userId: string,
+	userId: string | null,
 	page: number = 1,
 	pageSize: number = 50
 ): Promise<IndividualResponsesResult> {
 	// Validate event and authorization
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	// Get all questions for the event ordered by order field
 	const questions = await db
@@ -915,9 +917,9 @@ export interface FullAnalytics {
 	individualResponses?: IndividualResponsesResult;
 }
 
-export async function getFullAnalytics(eventId: string, userId: string): Promise<FullAnalytics> {
+export async function getFullAnalytics(eventId: string, userId: string | null): Promise<FullAnalytics> {
 	const event = await getEventOrThrow(eventId);
-	validateEventCreator(event.creatorId, userId);
+	validateAnalyticsAccess(event, userId);
 
 	const [overview, timeline, abandonmentFunnel, questions, participants] = await Promise.all([
 		getOverviewMetrics(eventId, userId),

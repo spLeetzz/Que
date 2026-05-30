@@ -27,15 +27,26 @@ import { SettingsTab } from "~/components/event-tabs/SettingsTab";
 import { ChatTab } from "~/components/event-tabs/ChatTab";
 import { PollsTab } from "~/components/event-tabs/PollsTab";
 import { cn } from "~/lib/utils";
+import { copyToClipboard } from "~/lib/clipboard";
+import { trpc } from "~/trpc/client";
 
 export default function PublicEventPage({ params }: { params: Promise<{ id: string }> }) {
-	const { id } = React.use(params);
+	// URL segment — may be a UUID or a custom slug
+	const { id: urlIdentifier } = React.use(params);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isMounted, setIsMounted] = useState(false);
 	const [participantId, setParticipantId] = useState<string | null>(null);
 	const [alias, setAlias] = useState("");
 	const [isJoined, setIsJoined] = useState(false);
+	const [isRefreshing, setIsRefreshing] = useState(false);
+
+	const trpcUtils = trpc.useUtils();
+
+	const { data: event, isLoading: isLoadingEvent, refetch: refetchEvent } = useEvent(urlIdentifier);
+
+	// All API calls require the canonical UUID, not the URL slug
+	const eventId = event?.id ?? "";
 
 	const {
 		isConnected,
@@ -43,16 +54,15 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 		onlineCount,
 		participantStatuses,
 		updateStatus,
-	} = useSocket(id, { participantId });
+	} = useSocket(eventId, { participantId, enabled: !!eventId });
 
-	const { data: event, isLoading: isLoadingEvent } = useEvent(id, {
-		enablePolling: !isConnected
+	const { data: items, isLoading: isLoadingItems, refetch: refetchItems } = useItems(eventId, {
+		enabled: !!eventId,
+		enablePolling: event?.type === "banter" || !isConnected,
 	});
-	const { data: items, isLoading: isLoadingItems } = useItems(id, { 
-		enablePolling: event?.type === "banter" || !isConnected
-	});
-	const { data: participants, isLoading: isLoadingParticipants } = useParticipants(id, {
-		enablePolling: event?.type === "banter" || !isConnected
+	const { data: participants, isLoading: isLoadingParticipants, refetch: refetchParticipants } = useParticipants(eventId, {
+		enabled: !!eventId,
+		enablePolling: event?.type === "banter" || !isConnected,
 	});
 	const { data: session } = authClient.useSession();
 	const currentUser = session?.user;
@@ -134,9 +144,14 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 			return;
 		}
 
+		if (!eventId) {
+			toast.error("Event is still loading");
+			return;
+		}
+
 		try {
 			const res = await createParticipant.mutateAsync({
-				eventId: id,
+				eventId,
 				alias: alias.trim(),
 			});
 			setParticipantId(res.id);
@@ -150,7 +165,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
 	const handleFormSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!event || !items) return;
+		if (!event || !items || !eventId) return;
 
 		const questionItems = items.filter((i) => i.category === "question");
 		const errors: Record<string, string> = {};
@@ -172,7 +187,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
 		try {
 			await createResponse.mutateAsync({
-				eventId: id,
+				eventId,
 				participantId: participantId ?? undefined,
 				answers: Object.entries(answers).map(([itemId, val]) => ({
 					itemId,
@@ -196,7 +211,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
 		try {
 			await createItem.mutateAsync({
-				eventId: id,
+				eventId,
 				category: "chat",
 				value: text,
 				participantId,
@@ -216,17 +231,48 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 		updateStatus(e.target.value.trim().length > 0 ? "typing" : "idle");
 	};
 
-	const copyLink = () => {
-		navigator.clipboard.writeText(window.location.origin + `/events/${id}`);
-		toast.success("Link copied!");
+	const sharePath = event ? `/events/${event.slug || event.id}` : `/events/${urlIdentifier}`;
+
+	const copyLink = async () => {
+		if (!event) return;
+		const url = `${window.location.origin}${sharePath}`;
+		try {
+			await copyToClipboard(url);
+			toast.success("Share link copied!");
+		} catch {
+			toast.error("Could not copy link — try copying manually", {
+				description: url,
+			});
+		}
 	};
 
-	const refresh = () => {
-		window.location.reload();
+	const refresh = async () => {
+		if (!eventId) return;
+		setIsRefreshing(true);
+		try {
+			await Promise.all([
+				refetchEvent(),
+				refetchItems(),
+				refetchParticipants(),
+				trpcUtils.responses.listByEvent.invalidate({ eventId }),
+				trpcUtils.analytics.getOverview.invalidate({ eventId }),
+				trpcUtils.analytics.getQuestionAnalytics.invalidate({ eventId }),
+				trpcUtils.analytics.getTimeline.invalidate({ eventId }),
+				trpcUtils.analytics.getFullAnalytics.invalidate({ eventId }),
+			]);
+			toast.success("Live data refreshed");
+		} catch {
+			toast.error("Failed to refresh data");
+		} finally {
+			setIsRefreshing(false);
+		}
 	};
 
-	// Loading gate — wait for all critical data + hydration
-	if (!isMounted || isLoadingEvent || isLoadingItems || (event?.type === "banter" && isLoadingParticipants)) {
+	const waitingForDetails =
+		!!eventId && (isLoadingItems || (event?.type === "banter" && isLoadingParticipants));
+
+	// Loading gate — wait for event + dependent data
+	if (!isMounted || isLoadingEvent || waitingForDetails) {
 		return (
 			<div className="flex h-screen items-center justify-center bg-background" suppressHydrationWarning>
 				<LoadingSpinner size="lg" label="Connecting to console..." />
@@ -282,7 +328,17 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 				<div className="absolute bottom-1/4 right-1/4 -z-10 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
 				<div className="w-full max-w-md">
-					<Card className="w-full shadow-2xl border border-border/50 backdrop-blur-xl bg-card/75 rounded-2xl overflow-hidden">
+					<Card className="w-full shadow-2xl border border-border/50 backdrop-blur-xl bg-card/75 rounded-2xl overflow-hidden relative">
+						<Button
+							type="button"
+							variant="outline"
+							size="icon"
+							onClick={() => void copyLink()}
+							title="Copy sharing link"
+							className="absolute top-4 right-4 rounded-xl border-border/60 hover:bg-secondary z-10"
+						>
+							<Copy className="h-4 w-4 text-muted-foreground" />
+						</Button>
 						<CardContent className="p-8 space-y-6">
 							<div className="text-center space-y-3">
 								<div className="size-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto shadow-sm">
@@ -399,11 +455,26 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 									</div>
 								)}
 							</div>
-							<div className="flex items-center gap-1.5 self-end sm:self-auto">
-								<Button variant="outline" size="icon" onClick={refresh} title="Refresh Live Data" className="size-8.5 rounded-xl border-border/60 hover:bg-secondary">
-									<RefreshCcw className="h-4 w-4 text-muted-foreground" />
+							<div className="flex items-center gap-1.5 self-end sm:self-auto relative z-10">
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={refresh}
+									disabled={isRefreshing || !eventId}
+									title="Refresh live data"
+									className="rounded-xl border-border/60 hover:bg-secondary"
+								>
+									<RefreshCcw className={cn("h-4 w-4 text-muted-foreground", isRefreshing && "animate-spin")} />
 								</Button>
-								<Button variant="outline" size="icon" onClick={copyLink} title="Copy Sharing Link" className="size-8.5 rounded-xl border-border/60 hover:bg-secondary">
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={() => void copyLink()}
+									title="Copy sharing link"
+									className="rounded-xl border-border/60 hover:bg-secondary"
+								>
 									<Copy className="h-4 w-4 text-muted-foreground" />
 								</Button>
 							</div>
@@ -413,6 +484,11 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 							<h1 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">{event.title}</h1>
 							{event.description && (
 								<p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">{event.description}</p>
+							)}
+							{event.slug && (
+								<p className="text-xs text-muted-foreground font-mono">
+									/events/{event.slug}
+								</p>
 							)}
 						</div>
 					</div>
@@ -491,24 +567,25 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
 							<TabsContent value="polls" className="mt-0 outline-none animate-in fade-in-30 duration-300">
 								<PollsTab
-									eventId={id}
+									eventId={eventId}
 									items={items ?? []}
 									participantId={participantId}
+									isCreator={Boolean(isCreator)}
 								/>
 							</TabsContent>
 
 							<TabsContent value="results" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-								<ResultsTab eventId={id} eventTitle={event.title} isConnected={isConnected} />
+								<ResultsTab eventId={eventId} eventTitle={event.title} isConnected={isConnected} canManage={Boolean(isCreator)} />
 							</TabsContent>
 
 							{isCreator && (
 								<>
 									<TabsContent value="manage" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-										<ManageTab eventId={id} items={items ?? []} eventType={event.type} />
+										<ManageTab eventId={eventId} items={items ?? []} eventType={event.type} />
 									</TabsContent>
 
 									<TabsContent value="settings" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-										<SettingsTab event={event} eventId={id} />
+										<SettingsTab event={event} eventId={eventId} />
 									</TabsContent>
 								</>
 							)}
@@ -525,21 +602,24 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 									onFormSubmit={handleFormSubmit}
 									onInputChange={handleInputChange}
 									isSubmitting={createResponse.isLoading}
+									isCreator={Boolean(isCreator)}
+									isAuthenticated={Boolean(currentUser && !currentUser.isAnonymous)}
+									loginHref={`/login?callbackUrl=${encodeURIComponent(`${sharePath}?tab=participate`)}`}
 								/>
 							</TabsContent>
 
 							<TabsContent value="results" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-								<ResultsTab eventId={id} eventTitle={event.title} isConnected={isConnected} />
+								<ResultsTab eventId={eventId} eventTitle={event.title} isConnected={isConnected} canManage={Boolean(isCreator)} />
 							</TabsContent>
 
 							{isCreator && (
 								<>
 									<TabsContent value="manage" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-										<ManageTab eventId={id} items={items ?? []} eventType={event.type} />
+										<ManageTab eventId={eventId} items={items ?? []} eventType={event.type} />
 									</TabsContent>
 
 									<TabsContent value="settings" className="mt-0 outline-none animate-in fade-in-30 duration-300">
-										<SettingsTab event={event} eventId={id} />
+										<SettingsTab event={event} eventId={eventId} />
 									</TabsContent>
 								</>
 							)}

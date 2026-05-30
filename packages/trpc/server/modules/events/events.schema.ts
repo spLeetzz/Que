@@ -23,6 +23,7 @@ export const eventSchema = z.object({
 	authRequired: z.boolean(),
 	multipleResponses: z.boolean(),
 	receiveEmails: z.boolean(),
+	redirectUrl: z.string().nullable().optional(),
 	theme: z.string().nullable().optional(),
 	expiresAt: z.date().nullable(),
 	deletedAt: z.date().nullable(),
@@ -51,6 +52,7 @@ export const createEventSchema = z.object({
 	authRequired: z.boolean().default(false),
 	multipleResponses: z.boolean().default(false),
 	receiveEmails: z.boolean().default(false),
+	redirectUrl: z.string().url().nullable().optional(),
 	theme: z.string().nullable().optional(),
 	expiresAt: z.coerce.date().nullable().optional(),
 });
@@ -84,6 +86,7 @@ export const updateEventSchema = z.object({
 		authRequired: z.boolean().optional(),
 		multipleResponses: z.boolean().optional(),
 		receiveEmails: z.boolean().optional(),
+		redirectUrl: z.string().url().nullable().optional(),
 		theme: z.string().nullable().optional(),
 		expiresAt: z.coerce.date().nullable().optional(),
 	}),

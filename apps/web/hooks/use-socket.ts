@@ -15,6 +15,7 @@ export interface UseSocketOptions {
 	enableFallback?: boolean;
 	fallbackInterval?: number;
 	participantId?: string | null;
+	enabled?: boolean;
 	onResponseNew?: (payload: any) => void;
 	onItemCreated?: (payload: any) => void;
 	onItemUpdated?: (payload: any) => void;
@@ -26,6 +27,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 		enableFallback = true,
 		fallbackInterval = 4000,
 		participantId,
+		enabled = true,
 		onResponseNew,
 		onItemCreated,
 		onItemUpdated,
@@ -48,7 +50,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 	}, [eventId, isConnected, participantId]);
 
 	useEffect(() => {
-		if (!eventId) return;
+		if (!eventId || !enabled) return;
 
 		const socketUrl = env.NEXT_PUBLIC_API_URL
 			? env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
@@ -212,7 +214,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			socket.disconnect();
 			socketRef.current = null;
 		};
-	}, [eventId, enableFallback, participantId, trpcUtils, onResponseNew, onItemCreated, onItemUpdated, onItemDeleted]);
+	}, [eventId, enabled, enableFallback, participantId, trpcUtils, onResponseNew, onItemCreated, onItemUpdated, onItemDeleted]);
 
 	// Return full reactive controls for developers building event pages
 	return {

@@ -8,6 +8,7 @@ import { Separator } from "~/components/ui/separator";
 import { Badge } from "~/components/ui/badge";
 import { toast } from "sonner";
 import { Save, CheckCircle, Archive, Trash2, Copy, Zap, PlayCircle, PauseCircle, Settings } from "lucide-react";
+import { getEventTabPath } from "~/lib/event-paths";
 import { EventSettingsForm } from "~/components/features/event-settings-form";
 
 interface SettingsTabProps {
@@ -56,7 +57,7 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
   const duplicateMutation = trpc.events.duplicate.useMutation({
     onSuccess: (data) => {
       toast.success("Event duplicated!");
-      router.push(`/events/${data.id}?tab=manage`);
+      router.push(getEventTabPath(data, "manage"));
     },
     onError: (error) => toast.error(error.message || "Failed to duplicate event"),
   });
@@ -187,7 +188,7 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
           </div>
         </CardHeader>
         <CardContent className="p-5">
-          <EventSettingsForm eventId={eventId} />
+          <EventSettingsForm eventId={eventId} eventType={event.type} />
         </CardContent>
       </Card>
       </div>

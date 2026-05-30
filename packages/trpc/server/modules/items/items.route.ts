@@ -36,10 +36,19 @@ export const itemsRouter = router({
 		.input(createItemSchema)
 		.output(itemSchema)
 		.mutation(async ({ input, ctx }) => {
-			if (!ctx.user) {
+			// Chat messages use participantId; questions require an authenticated creator session
+			if (input.category === "question" && !ctx.user) {
 				throw new TRPCError({ code: "UNAUTHORIZED", message: "User session not found" });
 			}
-			return createItem(input, ctx.user);
+
+			const actor = ctx.user ?? {
+				id: "",
+				name: "Guest",
+				email: "",
+				isAnonymous: true,
+			};
+
+			return createItem(input, actor);
 		}),
 
 	// GET /items/event/{eventId}

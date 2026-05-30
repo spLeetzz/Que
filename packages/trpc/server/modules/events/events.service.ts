@@ -5,6 +5,8 @@ import { eq, and, ne, isNull, or, gt, desc, sql, count } from "drizzle-orm";
 
 import type { CreateEventInput, UpdateEventInput, EventType, EventStatus } from "./events.schema";
 import type { User } from "../../shared/types";
+import { resolveUniqueSlug, normalizeSlugInput } from "../../utils/slug";
+import { validateReceiveEmails, normalizeReceiveEmails } from "../../utils/event-settings";
 
 const VALID_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
 	draft: ["published", "deleted"],
@@ -19,29 +21,6 @@ function validateStatusTransition(current: EventStatus, target: EventStatus): vo
 		throw new TRPCError({
 			code: "BAD_REQUEST",
 			message: `Invalid status transition from ${current} to ${target}`,
-		});
-	}
-}
-
-// Only called when slug is non-null; null slugs never conflict (Postgres allows multiple NULLs in unique index)
-async function validateSlugUniqueness(slug: string, excludeEventId?: string): Promise<void> {
-	const existing = await db
-		.select({ id: events.id })
-		.from(events)
-		.where(and(eq(events.slug, slug), isNull(events.deletedAt)))
-		.limit(1);
-
-	const conflict = existing.filter((e) => e.id !== excludeEventId);
-	if (conflict.length > 0) {
-		throw new TRPCError({ code: "CONFLICT", message: "Slug already exists" });
-	}
-}
-
-function validateReceiveEmails(receiveEmails: boolean, eventType: EventType): void {
-	if (receiveEmails && eventType !== "form") {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "receiveEmails can only be enabled for form events",
 		});
 	}
 }
@@ -71,12 +50,12 @@ async function getEventOrThrow(eventId: string) {
 
 export async function createEvent(data: CreateEventInput, creator: User) {
 	const { slug, receiveEmails = false, ...rest } = data;
+	const authRequired = rest.authRequired ?? false;
+	const effectiveReceiveEmails = normalizeReceiveEmails(receiveEmails, data.type, authRequired);
 
-	validateReceiveEmails(receiveEmails, data.type);
+	validateReceiveEmails(effectiveReceiveEmails, data.type, authRequired);
 
-	if (slug) {
-		await validateSlugUniqueness(slug);
-	}
+	const resolvedSlug = await resolveUniqueSlug(slug, data.title);
 
 	return db.transaction(async (tx) => {
 		const result = await tx
@@ -84,9 +63,9 @@ export async function createEvent(data: CreateEventInput, creator: User) {
 			.values({
 				...rest,
 				creatorId: creator.id,
-				slug: slug ?? null,
-				status: data.type === "banter" ? "published" : "draft", // Banter is published immediately, others start as draft
-				receiveEmails,
+				slug: resolvedSlug,
+				status: data.type === "banter" ? "published" : "draft",
+				receiveEmails: effectiveReceiveEmails,
 			})
 			.returning();
 
@@ -125,16 +104,28 @@ export async function getEventByIdOrSlug(identifier: string, requesterId: string
 		throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
 	}
 
-	// Draft events are only visible to their creator
-	// Allow viewing if: not draft, OR is creator
 	if (event.status === "draft") {
 		if (!requesterId || event.creatorId !== requesterId) {
-			console.log("[getEventByIdOrSlug] Draft event access denied:", {
-				eventId: event.id,
-				eventCreatorId: event.creatorId,
-				requesterId,
-				match: event.creatorId === requesterId
-			});
+			throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+		}
+	}
+
+	if (event.visibility === "private" && event.creatorId !== requesterId) {
+		if (!requesterId) {
+			throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+		}
+
+		if (event.type === "banter") {
+			const [participant] = await db
+				.select({ id: participants.id })
+				.from(participants)
+				.where(and(eq(participants.eventId, event.id), eq(participants.userId, requesterId)))
+				.limit(1);
+
+			if (!participant) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+		} else {
 			throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
 		}
 	}
@@ -171,6 +162,7 @@ export async function listUserEvents(
 				authRequired: events.authRequired,
 				multipleResponses: events.multipleResponses,
 				receiveEmails: events.receiveEmails,
+				redirectUrl: events.redirectUrl,
 				theme: events.theme,
 				expiresAt: events.expiresAt,
 				deletedAt: events.deletedAt,
@@ -228,6 +220,7 @@ export async function listPublicEvents(filters: {
 				authRequired: events.authRequired,
 				multipleResponses: events.multipleResponses,
 				receiveEmails: events.receiveEmails,
+				redirectUrl: events.redirectUrl,
 				theme: events.theme,
 				expiresAt: events.expiresAt,
 				deletedAt: events.deletedAt,
@@ -257,18 +250,37 @@ export async function updateEvent(eventId: string, data: UpdateEventInput, userI
 
 	validateCreator(event.creatorId, userId);
 
-	if (data.receiveEmails === true) {
-		validateReceiveEmails(true, event.type);
+	const nextAuthRequired = data.authRequired ?? event.authRequired;
+	let nextReceiveEmails = data.receiveEmails ?? event.receiveEmails;
+
+	if (event.type === "banter") {
+		nextReceiveEmails = false;
+	} else if (!nextAuthRequired) {
+		nextReceiveEmails = false;
 	}
 
-	// Only validate uniqueness when slug is non-null and actually changing
-	if (data.slug && data.slug !== event.slug) {
-		await validateSlugUniqueness(data.slug, eventId);
+	validateReceiveEmails(nextReceiveEmails, event.type, nextAuthRequired);
+
+	let nextSlug = event.slug;
+	if (data.slug !== undefined) {
+		const normalized = normalizeSlugInput(data.slug);
+		if (normalized && normalized !== event.slug) {
+			nextSlug = await resolveUniqueSlug(normalized, data.title ?? event.title, eventId);
+		} else if (!normalized && !event.slug) {
+			nextSlug = await resolveUniqueSlug(null, data.title ?? event.title, eventId);
+		} else if (!normalized) {
+			nextSlug = null;
+		}
 	}
 
 	const result = await db
 		.update(events)
-		.set({ ...data, updatedAt: new Date() })
+		.set({
+			...data,
+			slug: nextSlug,
+			receiveEmails: nextReceiveEmails,
+			updatedAt: new Date(),
+		})
 		.where(eq(events.id, eventId))
 		.returning();
 

@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@repo/database";
 import { events, responses, answers, participants, items } from "@repo/database/schema";
 import { eq, and, isNull, ne, count, desc } from "drizzle-orm";
+import { appEmitter } from "../../utils/emitter";
+import { assertEventAcceptsResponses } from "../../utils/event-response-guards";
 
 import type { CreateResponseInput } from "./responses.schema";
 import type { User } from "../../shared/types";
@@ -100,6 +102,7 @@ export async function createResponse(
 	userAgent?: string,
 ) {
 	const event = await getEventOrThrow(data.eventId);
+	assertEventAcceptsResponses(event, user);
 
 	// Validate all items exist and belong to this event
 	const itemIds = data.answers.map((a) => a.itemId);
@@ -205,7 +208,7 @@ export async function createResponse(
 	}
 
 	try {
-		return await db.transaction(async (tx) => {
+		const resultResponse = await db.transaction(async (tx) => {
 			// Create response
 			const [response] = await tx
 				.insert(responses)
@@ -246,6 +249,14 @@ export async function createResponse(
 
 			return response;
 		});
+
+		appEmitter.emit("response:created", {
+			eventId: resultResponse.eventId,
+			responseId: resultResponse.id,
+			participantId,
+		});
+
+		return resultResponse;
 	} catch (err) {
 		if (err instanceof TRPCError) throw err;
 		console.error("Database error while creating response:", err);

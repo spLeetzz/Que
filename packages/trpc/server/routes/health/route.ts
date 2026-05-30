@@ -1,10 +1,10 @@
-import { z, zodUndefinedModel } from "../../schema";
+import { z } from "zod";
 import { publicProcedure, router } from "../../trpc";
 
 export const healthRouter = router({
 	getHealth: publicProcedure
 		.meta({ openapi: { method: "GET", path: "/health" } })
-		.input(zodUndefinedModel)
+		.input(z.undefined().optional())
 		.output(
 			z.object({
 				status: z.literal("healthy").describe("status of the server"),
