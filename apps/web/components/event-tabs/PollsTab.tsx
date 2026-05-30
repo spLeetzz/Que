@@ -138,7 +138,7 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
 
   return (
     <div className="space-y-6">
-      {/* Create poll — creators only (matches backend permission) */}
+      {/* Create poll, creators only (matches backend permission) */}
       {isCreator && (
       <div className="flex justify-between items-center bg-card/45 backdrop-blur-sm border rounded-xl p-4 shadow-sm">
         <div>
@@ -230,7 +230,7 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
             <p className="text-xs">
               {isCreator
                 ? "Create a quick poll to start collecting votes in real-time!"
-                : "The host hasn't started a poll yet — check back soon."}
+                : "The host hasn't started a poll yet, check back soon."}
             </p>
           </CardContent>
         </Card>

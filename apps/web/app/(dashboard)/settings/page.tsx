@@ -248,7 +248,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" />Personal Access Tokens</CardTitle>
-              <CardDescription>Generate API tokens for programmatic access. Keep tokens secure — treat them like passwords.</CardDescription>
+              <CardDescription>Generate API tokens for programmatic access. Keep tokens secure, treat them like passwords.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Premium Required Notice */}
@@ -295,7 +295,7 @@ export default function SettingsPage() {
                 {generatedToken && (
                   <Alert>
                     <AlertDescription className="space-y-2">
-                      <p className="font-semibold text-yellow-700 dark:text-yellow-400">⚠️ Save this token now — it won't be shown again!</p>
+                      <p className="font-semibold text-yellow-700 dark:text-yellow-400">⚠️ Save this token now, it won't be shown again!</p>
                       <div className="flex gap-2">
                         <Input value={generatedToken} readOnly className="font-mono text-xs" />
                         <Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedToken)}><Copy className="h-4 w-4" /></Button>

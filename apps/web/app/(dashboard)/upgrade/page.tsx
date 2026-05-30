@@ -22,7 +22,7 @@ const PLANS = [
       "Real-time WebSocket support",
       "Public event sharing",
       "Standard analytics",
-      "Available forever while app is live"
+      "Available forever while app is live",
     ],
     cta: "Current Plan",
     ctaVariant: "outline" as const,
@@ -45,7 +45,7 @@ const PLANS = [
       "Hidden fields & metadata",
       "State token generation",
       "Custom redirect URLs",
-      "Priority support"
+      "Priority support",
     ],
     cta: "Contact for Premium",
     ctaVariant: "default" as const,
@@ -57,7 +57,8 @@ const PLANS = [
 
 export default function UpgradePage() {
   const handleContactPremium = () => {
-    window.location.href = "mailto:adityapratap2404@gmail.com?subject=Premium Plan Inquiry - Service Forms";
+    window.location.href =
+      "mailto:adityapratap2404@gmail.com?subject=Premium Plan Inquiry - Service Forms";
   };
 
   return (
@@ -91,29 +92,38 @@ export default function UpgradePage() {
 
               {plan.recommended && (
                 <div className="absolute top-4 right-4">
-                  <Badge className="rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-primary text-primary-foreground shadow-sm">
-                    Recommended
+                  <Badge className="rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-primary text-primary-foreground/90 shadow-sm">
+                    DEAL
                   </Badge>
                 </div>
               )}
 
               <CardHeader className="pt-8 px-6 pb-4 space-y-3">
-                <div className={`size-10 rounded-xl flex items-center justify-center ${plan.iconBg}`}>
+                <div
+                  className={`size-10 rounded-xl flex items-center justify-center ${plan.iconBg}`}
+                >
                   <Icon className={`size-5 ${plan.color}`} />
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold tracking-tight">{plan.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{plan.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    {plan.desc}
+                  </p>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-black tracking-tight">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-muted-foreground font-medium"> {plan.period}</span>}
+                  {plan.period && (
+                    <span className="text-sm text-muted-foreground font-medium">
+                      {" "}
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
               </CardHeader>
 
               <CardContent className="flex-1 px-6 pb-6">
                 <ul className="space-y-2.5">
-                  {plan.features.map(feature => (
+                  {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2.5 text-sm">
                       <div className="size-4 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
                         <CheckIcon className="size-2.5 text-emerald-500 stroke-[3]" />
@@ -161,7 +171,9 @@ export default function UpgradePage() {
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <p>
-            <strong className="text-foreground">Service Forms</strong> allow you to integrate Que forms directly into your application via API. Perfect for collecting user feedback, surveys, or any data collection needs within your own app.
+            <strong className="text-foreground">Service Forms</strong> allow you to integrate Que
+            forms directly into your application via API. Perfect for collecting user feedback,
+            surveys, or any data collection needs within your own app.
           </p>
           <div className="space-y-2">
             <p className="font-semibold text-foreground">Key Features:</p>
@@ -174,10 +186,20 @@ export default function UpgradePage() {
             </ul>
           </div>
           <p>
-            <strong className="text-foreground">Use Case Example:</strong> Your SaaS app needs to collect customer feedback. Create a service form via API, generate a state token for each user, and embed the form link in your app. After submission, users are redirected back to your app with the response data.
+            <strong className="text-foreground">Use Case Example:</strong> Your SaaS app needs to
+            collect customer feedback. Create a service form via API, generate a state token for
+            each user, and embed the form link in your app. After submission, users are redirected
+            back to your app with the response data.
           </p>
           <p className="text-xs">
-            Contact <a href="mailto:adityapratap2404@gmail.com" className="text-primary hover:underline font-medium">adityapratap2404@gmail.com</a> to discuss your requirements and get started with Premium.
+            Contact{" "}
+            <a
+              href="mailto:adityapratap2404@gmail.com"
+              className="text-primary hover:underline font-medium"
+            >
+              adityapratap2404@gmail.com
+            </a>{" "}
+            to discuss your requirements and get started with Premium.
           </p>
         </CardContent>
       </Card>

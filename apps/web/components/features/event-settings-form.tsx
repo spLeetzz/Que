@@ -2,7 +2,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -13,7 +13,10 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { ThemeSelector } from "~/components/features/theme-selector";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
-import { Check, RotateCcw, Save } from "lucide-react";
+import { CalendarIcon, Check, RotateCcw, Save } from "lucide-react";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { Calendar } from "~/components/ui/calendar";
 
 const formatDateTimeLocal = (date: Date | null | undefined | string): string => {
   if (!date) return "";
@@ -72,13 +75,13 @@ function Toggle({
       onClick={() => onChange(!checked)}
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-        checked ? "bg-primary" : "bg-muted"
+        checked ? "bg-primary" : "bg-muted",
       )}
     >
       <span
         className={cn(
           "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ease-in-out",
-          checked ? "translate-x-4" : "translate-x-0"
+          checked ? "translate-x-4" : "translate-x-0",
         )}
       />
     </button>
@@ -109,7 +112,7 @@ function RadioPill({
         "relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
         selected
           ? "bg-primary/10 border-primary/40 text-foreground"
-          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
       )}
     >
       {selected && <Check className="h-3 w-3 shrink-0" />}
@@ -134,9 +137,7 @@ function Section({
         <h4 className="text-sm font-semibold text-foreground tracking-wide uppercase opacity-60">
           {title}
         </h4>
-        {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
       <div className="space-y-4">{children}</div>
     </div>
@@ -223,6 +224,9 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
     },
   });
 
+  const [open, setOpen] = useState(false);
+  const expiresAt = form.watch("expiresAt");
+
   useEffect(() => {
     if (event) {
       form.reset({
@@ -240,6 +244,8 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
     }
   }, [event, form]);
 
+  const doSaveRef = useRef<((data: EventSettingsData) => Promise<void>) | null>(null);
+
   const doSave = useCallback(
     async (data: EventSettingsData) => {
       if (isSavingRef.current) return;
@@ -250,30 +256,31 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
           expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
         } as any);
         toast.success("Saved");
-        form.reset(data); // mark as not dirty
+        form.reset(data, { keepDefaultValues: false });
       } catch {
         toast.error("Failed to save");
       } finally {
         isSavingRef.current = false;
       }
     },
-    [updateEvent, form]
+    [updateEvent, form],
   );
 
-  // Debounced auto-save on any field change
+  doSaveRef.current = doSave;
+
   useEffect(() => {
-    const sub = form.watch((data) => {
-      if (!form.formState.isDirty) return;
+    const sub = form.watch(() => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        form.handleSubmit(doSave)();
+        if (!form.formState.isDirty) return;
+        form.handleSubmit((data) => doSaveRef.current?.(data))();
       }, 1200);
     });
     return () => {
       sub.unsubscribe();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [form, doSave]);
+  }, [form]);
 
   const { errors } = form.formState;
   const isSubmitting = updateEvent.isLoading;
@@ -300,31 +307,9 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
           {isSubmitting
             ? "Saving…"
             : form.formState.isDirty
-            ? "Unsaved changes"
-            : "All changes saved"}
+              ? "Unsaved changes"
+              : "All changes saved"}
         </p>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => form.reset()}
-            disabled={isSubmitting || !form.formState.isDirty}
-            className="h-7 text-xs gap-1.5"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Discard
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isSubmitting || !form.formState.isDirty}
-            className="h-7 text-xs gap-1.5"
-          >
-            <Save className="h-3 w-3" />
-            Save now
-          </Button>
-        </div>
       </div>
 
       {/* Basic */}
@@ -481,27 +466,84 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
             render={({ field }) => (
               <ThemeSelector
                 value={field.value ?? null}
-                onChange={(theme) =>
-                  form.setValue("theme", theme, { shouldDirty: true })
-                }
+                onChange={(theme) => form.setValue("theme", theme, { shouldDirty: true })}
                 disabled={isSubmitting}
               />
             )}
           />
         </Field>
-
         <Field
           label="Expiration date"
-          htmlFor="expiresAt"
           hint="Leave empty for no expiration. Event closes automatically after this date."
           error={errors.expiresAt?.message}
         >
-          <Input
-            id="expiresAt"
-            type="datetime-local"
-            {...form.register("expiresAt")}
-            disabled={isSubmitting}
-          />
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={isSubmitting}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !expiresAt && "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {expiresAt ? format(new Date(expiresAt), "PPP p") : "Pick a date & time"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={expiresAt ? new Date(expiresAt) : undefined}
+                onSelect={(date) => {
+                  if (!date) {
+                    form.setValue("expiresAt", "", { shouldDirty: true });
+                    return;
+                  }
+                  // preserve existing time if already set
+                  const existing = expiresAt ? new Date(expiresAt) : new Date();
+                  date.setHours(existing.getHours(), existing.getMinutes());
+
+                  form.setValue("expiresAt", date.toISOString(), {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }}
+                disabled={(date) => date < new Date()}
+                initialFocus
+              />
+              <div className="border-t p-3 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Time</span>
+                <Input
+                  type="time"
+                  className="w-fit [color-scheme:dark]"
+                  value={expiresAt ? format(new Date(expiresAt), "HH:mm") : ""}
+                  onChange={(e) => {
+                    const [h = 0, m = 0] = e.target.value.split(":").map(Number);
+                    const base = expiresAt ? new Date(expiresAt) : new Date();
+                    base.setHours(h, m);
+                    form.setValue("expiresAt", base.toISOString(), {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                  }}
+                />
+                {expiresAt && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-muted-foreground"
+                    onClick={() => {
+                      form.setValue("expiresAt", "", { shouldDirty: true });
+                      setOpen(false);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </Field>
       </Section>
     </form>

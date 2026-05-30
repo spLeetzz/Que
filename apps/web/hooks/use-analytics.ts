@@ -5,7 +5,7 @@ export function useAnalyticsOverview(eventId: string) {
 		{ eventId },
 		{
 			enabled: !!eventId,
-			staleTime: 30 * 1000, // 30 seconds — refetch on mount if older
+			staleTime: 30 * 1000, // 30 seconds, refetch on mount if older
 			refetchOnWindowFocus: true,
 		}
 	);

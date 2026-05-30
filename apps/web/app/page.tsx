@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { authClient } from "~/lib/auth";
 import { Button } from "~/components/ui/button";
 import { BackgroundImage } from "~/components/features/background-image";
-import { LogOut, LayoutDashboard, Zap, Users, Gauge, MessageSquare } from "lucide-react";
+import {
+  LogOut,
+  LayoutDashboard,
+  Zap,
+  Users,
+  Gauge,
+  MessageSquare,
+  ChevronRight,
+} from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -88,7 +96,8 @@ export default function Home() {
               {session?.user ? (
                 <Link href="/events">
                   <Button size="lg" className="h-11 px-8">
-                    Go to Dashboard
+                    Start Now
+                    <ChevronRight />
                   </Button>
                 </Link>
               ) : (
@@ -111,7 +120,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="border-t border-border py-16 px-4 sm:py-24 bg-secondary/20 relative z-10">
+      <section className="border-t py-16 px-4 sm:py-24 bg-secondary/80 relative z-5">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-16 space-y-3">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Powerful Features</h2>

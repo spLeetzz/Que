@@ -337,7 +337,7 @@ export default function AnalyticsPage() {
                         ))}
                       </div>
                       {processedData.responses.responses.length > 20 && (
-                        <p className="text-xs text-muted-foreground text-center py-4 border-t border-border/40">Showing 20 of {processedData.responses.responses.length} — export CSV for full data</p>
+                        <p className="text-xs text-muted-foreground text-center py-4 border-t border-border/40">Showing 20 of {processedData.responses.responses.length}, export CSV for full data</p>
                       )}
                     </>
                   ) : <p className="text-center text-muted-foreground py-12 text-sm">No responses yet.</p>}

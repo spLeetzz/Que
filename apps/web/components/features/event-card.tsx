@@ -150,7 +150,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
 							{event.title}
 						</CardTitle>
 						<CardDescription className="line-clamp-2 mt-1.5 text-sm leading-relaxed text-muted-foreground">
-							{event.description || "No description yet — click to add questions and settings."}
+							{event.description || "No description yet, click to add questions and settings."}
 						</CardDescription>
 					</div>
 					<Badge

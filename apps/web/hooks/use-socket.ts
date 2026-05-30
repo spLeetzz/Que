@@ -189,7 +189,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 		});
 
 		socket.on("error", (payload: { message: string }) => {
-			console.error("Socket room error:", payload.message);
+			console.info("Socket room info:", payload.message);
 		});
 
 		socket.on("disconnect", (reason) => {

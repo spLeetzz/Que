@@ -173,7 +173,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected, canManage = false
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-muted-foreground py-8">No responses yet — share your event link to collect data.</p>
+                <p className="text-center text-muted-foreground py-8">No responses yet, share your event link to collect data.</p>
               )}
             </CardContent>
           </Card>
