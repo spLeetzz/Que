@@ -9,7 +9,8 @@ import { authClient } from "~/lib/auth";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
-import { CheckCircle2, Mail, Zap } from "lucide-react";
+import { Separator } from "~/components/ui/separator";
+import { CheckCircle2, Mail, Zap, Loader2 } from "lucide-react";
 
 function GoogleIcon() {
 	return (
@@ -24,6 +25,7 @@ function GoogleIcon() {
 
 export default function SignUpPage() {
 	const [loading, setLoading] = useState(false);
+	const [googleLoading, setGoogleLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
 	const [emailValue, setEmailValue] = useState("");
@@ -51,6 +53,7 @@ export default function SignUpPage() {
 	};
 
 	const handleGoogleSignIn = async () => {
+		setGoogleLoading(true);
 		setError("");
 		await authClient.signIn.social({
 			provider: "google",
@@ -103,7 +106,29 @@ export default function SignUpPage() {
 					</div>
 				</div>
 
-				{/* Form */}
+				{/* Social Auth */}
+				<Button
+					type="button"
+					variant="outline"
+					className="w-full h-10"
+					onClick={handleGoogleSignIn}
+					disabled={googleLoading || loading}
+				>
+					{googleLoading ? (
+						<Loader2 className="h-4 w-4 animate-spin mr-2" />
+					) : (
+						<GoogleIcon />
+					)}
+					{googleLoading ? "Redirecting..." : "Continue with Google"}
+				</Button>
+
+				<div className="flex items-center gap-3">
+					<Separator className="flex-1" />
+					<span className="text-xs text-muted-foreground font-medium">or</span>
+					<Separator className="flex-1" />
+				</div>
+
+				{/* Email/Password Form */}
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(handleSignUp)} className="space-y-6">
 						{error && (
@@ -123,7 +148,7 @@ export default function SignUpPage() {
 											type="text"
 											placeholder="John Doe"
 											className="h-10"
-											disabled={loading}
+											disabled={loading || googleLoading}
 											{...field}
 										/>
 									</FormControl>
@@ -143,7 +168,7 @@ export default function SignUpPage() {
 											type="email"
 											placeholder="you@example.com"
 											className="h-10"
-											disabled={loading}
+											disabled={loading || googleLoading}
 											{...field}
 										/>
 									</FormControl>
@@ -163,7 +188,7 @@ export default function SignUpPage() {
 											type="password"
 											placeholder="••••••••"
 											className="h-10"
-											disabled={loading}
+											disabled={loading || googleLoading}
 											{...field}
 										/>
 									</FormControl>
@@ -172,7 +197,7 @@ export default function SignUpPage() {
 							)}
 						/>
 
-						<Button type="submit" className="w-full h-10" disabled={loading}>
+						<Button type="submit" className="w-full h-10" disabled={loading || googleLoading}>
 							{loading ? "Creating account..." : "Create Account"}
 						</Button>
 					</form>

@@ -10,7 +10,8 @@ import { authClient } from "~/lib/auth";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
-import { Zap } from "lucide-react";
+import { Separator } from "~/components/ui/separator";
+import { Zap, Loader2 } from "lucide-react";
 
 function GoogleIcon() {
 	return (
@@ -26,6 +27,7 @@ function GoogleIcon() {
 export default function LoginPage() {
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);
+	const [googleLoading, setGoogleLoading] = useState(false);
 	const [error, setError] = useState("");
 
 	const form = useForm<LoginFormValues>({
@@ -49,6 +51,7 @@ export default function LoginPage() {
 	};
 
 	const handleGoogleSignIn = async () => {
+		setGoogleLoading(true);
 		setError("");
 		await authClient.signIn.social({
 			provider: "google",
@@ -70,60 +73,82 @@ export default function LoginPage() {
 					</div>
 				</div>
 
-				{/* Form */}
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
-						{error && (
-							<div className="p-3 rounded-lg bg-red-500/10 border border-red-500/25 text-red-600 text-sm">
-								{error}
-							</div>
+			{/* Social Auth */}
+			<Button
+				type="button"
+				variant="outline"
+				className="w-full h-10"
+				onClick={handleGoogleSignIn}
+				disabled={googleLoading || loading}
+			>
+				{googleLoading ? (
+					<Loader2 className="h-4 w-4 animate-spin mr-2" />
+				) : (
+					<GoogleIcon />
+				)}
+				{googleLoading ? "Redirecting..." : "Continue with Google"}
+			</Button>
+
+			<div className="flex items-center gap-3">
+				<Separator className="flex-1" />
+				<span className="text-xs text-muted-foreground font-medium">or</span>
+				<Separator className="flex-1" />
+			</div>
+
+			{/* Email/Password Form */}
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+					{error && (
+						<div className="p-3 rounded-lg bg-red-500/10 border border-red-500/25 text-red-600 text-sm">
+							{error}
+						</div>
+					)}
+
+					<FormField
+						control={form.control}
+						name="email"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Email</FormLabel>
+								<FormControl>
+									<Input
+										type="email"
+										placeholder="you@example.com"
+										className="h-10"
+										disabled={loading || googleLoading}
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
 						)}
+					/>
 
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input
-											type="email"
-											placeholder="you@example.com"
-											className="h-10"
-											disabled={loading}
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+					<FormField
+						control={form.control}
+						name="password"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Password</FormLabel>
+								<FormControl>
+									<Input
+										type="password"
+										placeholder="••••••••"
+										className="h-10"
+										disabled={loading || googleLoading}
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 
-						<FormField
-							control={form.control}
-							name="password"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Password</FormLabel>
-									<FormControl>
-										<Input
-											type="password"
-											placeholder="••••••••"
-											className="h-10"
-											disabled={loading}
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<Button type="submit" className="w-full h-10" disabled={loading}>
-							{loading ? "Signing in..." : "Sign In"}
-						</Button>
-					</form>
-				</Form>
+					<Button type="submit" className="w-full h-10" disabled={loading || googleLoading}>
+						{loading ? "Signing in..." : "Sign In with Email"}
+					</Button>
+				</form>
+			</Form>
 
 				{/* Sign Up Link */}
 				<p className="text-center text-sm text-muted-foreground">
