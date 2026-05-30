@@ -11,6 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
 import { Separator } from "~/components/ui/separator";
+import { BackgroundImage } from "~/components/features/background-image";
 import { Zap, Loader2 } from "lucide-react";
 
 function GoogleIcon() {
@@ -60,8 +61,9 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4 bg-background">
-			<div className="w-full max-w-md space-y-8">
+		<div className="min-h-screen flex items-center justify-center px-4 bg-background relative">
+			<BackgroundImage type="picsum" />
+			<div className="w-full max-w-md space-y-8 relative z-10">
 				{/* Header */}
 				<div className="space-y-4 text-center">
 					<Link href="/" className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-primary text-primary-foreground mx-auto">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "~/lib/auth";
 import { Button } from "~/components/ui/button";
+import { BackgroundImage } from "~/components/features/background-image";
 import { LogOut, LayoutDashboard, Zap, Users, Gauge, MessageSquare } from "lucide-react";
 
 export default function Home() {
@@ -16,7 +17,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      <BackgroundImage type="picsum" />
+      
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">

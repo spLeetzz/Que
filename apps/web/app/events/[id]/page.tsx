@@ -7,6 +7,7 @@ import { useCreateResponse } from "~/hooks/use-create-response";
 import { useCreateItem } from "~/hooks/use-create-item";
 import { useCreateParticipant } from "~/hooks/use-create-participant";
 import { useSocket } from "~/hooks/use-socket";
+import { BackgroundImage } from "~/components/features/background-image";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -269,16 +270,16 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 	if (shouldShowJoinScreen) {
 		return (
 			<div className={cn("min-h-screen w-full relative transition-all duration-500 overflow-hidden flex items-center justify-center py-12 px-4", themeClass)}>
-				{isImageTheme && (
-					<div
-						className="absolute inset-0 bg-cover bg-center -z-10 opacity-15 dark:opacity-10 pointer-events-none filter blur-[2px]"
-						style={{ backgroundImage: `url(${event.theme!.substring(6)})` }}
-					/>
+				{/* Background: Unsplash theme if available, otherwise Picsum */}
+				{isImageTheme ? (
+					<BackgroundImage type="unsplash" themeUrl={event.theme?.substring(6)} isEventPage={true} />
+				) : (
+					<BackgroundImage type="picsum" isEventPage={true} />
 				)}
 				
 				{/* Background glowing gradients */}
-				<div className="absolute top-1/4 left-1/4 -z-20 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-				<div className="absolute bottom-1/4 right-1/4 -z-20 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+				<div className="absolute top-1/4 left-1/4 -z-10 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+				<div className="absolute bottom-1/4 right-1/4 -z-10 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
 				<div className="w-full max-w-md">
 					<Card className="w-full shadow-2xl border border-border/50 backdrop-blur-xl bg-card/75 rounded-2xl overflow-hidden">
@@ -353,16 +354,16 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
 	return (
 		<div className={cn("min-h-screen w-full relative transition-all duration-500 pb-16 overflow-x-hidden", themeClass)}>
-			{isImageTheme && (
-				<div 
-					className="absolute inset-0 bg-cover bg-center -z-10 opacity-15 dark:opacity-10 pointer-events-none filter blur-[2px]"
-					style={{ backgroundImage: `url(${event.theme?.substring(6)})` }}
-				/>
+			{/* Background: Unsplash theme if available, otherwise Picsum */}
+			{isImageTheme ? (
+				<BackgroundImage type="unsplash" themeUrl={event.theme?.substring(6)} isEventPage={true} />
+			) : (
+				<BackgroundImage type="picsum" isEventPage={true} />
 			)}
 			
 			{/* High-end ambient blurred glows behind page */}
-			<div className={cn("absolute top-20 left-10 -z-20 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
-			<div className={cn("absolute bottom-20 right-10 -z-20 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
+			<div className={cn("absolute top-20 left-10 -z-10 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
+			<div className={cn("absolute bottom-20 right-10 -z-10 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
 
 			<div className="container max-w-4xl py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-500">
 				
