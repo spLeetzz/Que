@@ -164,7 +164,7 @@ export default function ValidateStatePage() {
               service forms. They expire after a set time and can only be used once.
             </p>
             <p className="text-xs">
-              If you don't have a token, contact the form administrator.
+              If you don&apos;t have a token, contact the form administrator.
             </p>
           </div>
         </CardContent>

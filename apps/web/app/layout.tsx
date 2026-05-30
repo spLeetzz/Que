@@ -23,7 +23,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang="en" suppressHydrationWarning className="bg-background">
 			<body className={`${geistSans.variable} ${geistMono.variable}`}>
 				<GlobalProviders>{children}</GlobalProviders>
 			</body>
