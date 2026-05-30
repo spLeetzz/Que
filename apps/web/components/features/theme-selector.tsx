@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { X, Search, Loader2 } from "lucide-react";
+import { X, Search, Loader2, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { trpc } from "~/trpc/client";
 
@@ -31,12 +31,12 @@ export function ThemeSelector({ value, onChange, disabled }: ThemeSelectorProps)
 	const [searchResults, setSearchResults] = useState<UnsplashImage[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 	const [searchError, setSearchError] = useState<string | null>(null);
+	const [showSearch, setShowSearch] = useState(false);
 
 	const utils = trpc.useUtils();
 
 	// Extract the actual URL from the theme value (remove "image:" prefix)
 	const currentThemeUrl = value?.startsWith("image:") ? value.substring(6) : null;
-	const currentThemeClass = value?.startsWith("class:") ? value.substring(6) : null;
 
 	const handleSearch = async () => {
 		if (!searchQuery.trim()) return;
@@ -60,8 +60,8 @@ export function ThemeSelector({ value, onChange, disabled }: ThemeSelectorProps)
 			}));
 			setSearchResults(mappedImages);
 		} catch (error) {
-			setSearchError("Failed to search images");
-			console.error(error);
+			setSearchError("Failed to search images. Please try again.");
+			console.error("[v0] Unsplash search error:", error);
 		} finally {
 			setIsSearching(false);
 		}
@@ -73,145 +73,134 @@ export function ThemeSelector({ value, onChange, disabled }: ThemeSelectorProps)
 
 	const handleClearTheme = () => {
 		onChange(null);
+		setShowSearch(false);
+		setSearchQuery("");
+		setSearchResults([]);
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-6">
 			{/* Current Theme Preview */}
-			{(currentThemeUrl || currentThemeClass) && (
-				<div className="space-y-2">
-					<Label className="text-sm font-medium">Current Theme</Label>
-					<div className="relative rounded-lg overflow-hidden border border-border">
-						{currentThemeUrl ? (
-							<div className="relative h-32 w-full">
-								<Image
-									src={currentThemeUrl}
-									alt="Current theme"
-									fill
-									className="object-cover"
-								/>
-							</div>
-						) : (
-							<div className={`h-32 w-full ${currentThemeClass}`} />
-						)}
+			{currentThemeUrl ? (
+				<div className="space-y-3">
+					<div className="flex items-center justify-between">
+						<Label className="text-sm font-semibold">Current Background</Label>
 						<Button
 							type="button"
-							variant="destructive"
+							variant="ghost"
 							size="sm"
-							className="absolute top-2 right-2"
 							onClick={handleClearTheme}
 							disabled={disabled}
+							className="h-7 px-2 text-xs"
 						>
-							<X className="w-4 h-4 mr-1" />
-							Clear
+							<X className="h-3 w-3 mr-1" />
+							Change
 						</Button>
 					</div>
+					<div className="relative rounded-xl overflow-hidden border border-border shadow-sm h-40">
+						<Image
+							src={currentThemeUrl}
+							alt="Current theme"
+							fill
+							className="object-cover"
+							priority
+						/>
+					</div>
+				</div>
+			) : (
+				<div className="space-y-3">
+					<Label className="text-sm font-semibold">Background</Label>
+					<button
+						type="button"
+						onClick={() => setShowSearch(!showSearch)}
+						disabled={disabled}
+						className="w-full h-32 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/2 transition-colors flex flex-col items-center justify-center gap-2 disabled:opacity-50"
+					>
+						<ImageIcon className="h-8 w-8 text-muted-foreground" />
+						<span className="text-sm font-medium text-muted-foreground">Add Background Image</span>
+					</button>
 				</div>
 			)}
 
 			{/* Unsplash Search */}
-			<div className="space-y-2">
-				<Label htmlFor="theme-search" className="text-sm font-medium">
-					Search Background Images
-				</Label>
-				<div className="flex gap-2">
-					<Input
-						id="theme-search"
-						placeholder="e.g., nature, abstract, gradient..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.preventDefault();
-								handleSearch();
-							}
-						}}
-						disabled={disabled || isSearching}
-					/>
-					<Button
-						type="button"
-						onClick={handleSearch}
-						disabled={disabled || isSearching || !searchQuery.trim()}
-					>
-						{isSearching ? (
-							<Loader2 className="w-4 h-4 animate-spin" />
-						) : (
-							<Search className="w-4 h-4" />
-						)}
-					</Button>
-				</div>
-				<p className="text-xs text-muted-foreground">
-					Search for free images from Unsplash (no API key required)
-				</p>
-			</div>
-
-			{/* Search Error */}
-			{searchError && (
-				<div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-					{searchError}
-				</div>
-			)}
-
-			{/* Search Results */}
-			{searchResults.length > 0 && (
-				<div className="space-y-2">
-					<Label className="text-sm font-medium">Search Results</Label>
-					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-						{searchResults.map((image) => (
-							<button
-								key={image.id}
-								type="button"
-								onClick={() => handleSelectImage(image.urls.regular)}
-								disabled={disabled}
-								className="relative aspect-video rounded-lg overflow-hidden border-2 border-border hover:border-primary hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-								aria-label={`Select ${image.alt_description || "image"} by ${image.user.name}`}
-								tabIndex={0}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault();
-										handleSelectImage(image.urls.regular);
-									}
-								}}
-							>
-								<Image
-									src={image.urls.small}
-									alt={image.alt_description || "Unsplash image"}
-									fill
-									className="object-cover"
-									loading="lazy"
-								/>
-							</button>
-						))}
+			{showSearch && (
+				<div className="space-y-3 pt-4 border-t border-border">
+					<Label htmlFor="theme-search" className="text-sm font-semibold">
+						Search Unsplash
+					</Label>
+					<div className="flex gap-2">
+						<Input
+							id="theme-search"
+							placeholder="Nature, sunset, abstract..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									handleSearch();
+								}
+							}}
+							disabled={disabled || isSearching}
+							className="h-9"
+						/>
+						<Button
+							type="button"
+							onClick={handleSearch}
+							disabled={disabled || isSearching || !searchQuery.trim()}
+							size="sm"
+							className="px-3"
+						>
+							{isSearching ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Search className="h-4 w-4" />
+							)}
+						</Button>
 					</div>
-					<p className="text-xs text-muted-foreground">
-						Click an image to select it as your theme
-					</p>
+
+					{/* Search Error */}
+					{searchError && (
+						<div className="text-xs text-destructive bg-destructive/10 p-2 rounded-lg">
+							{searchError}
+						</div>
+					)}
+
+					{/* Search Results */}
+					{searchResults.length > 0 && (
+						<div className="space-y-2">
+							<p className="text-xs text-muted-foreground font-medium">
+								{searchResults.length} results found
+							</p>
+							<div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+								{searchResults.map((image) => (
+									<button
+										key={image.id}
+										type="button"
+										onClick={() => {
+											handleSelectImage(image.urls.regular);
+											setShowSearch(false);
+											setSearchQuery("");
+											setSearchResults([]);
+										}}
+										disabled={disabled}
+										className="relative aspect-square rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+										aria-label={`Select ${image.user.name}'s photo`}
+										title={`by ${image.user.name}`}
+									>
+										<Image
+											src={image.urls.small}
+											alt={`by ${image.user.name}`}
+											fill
+											className="object-cover"
+											loading="lazy"
+										/>
+									</button>
+								))}
+							</div>
+						</div>
+					)}
 				</div>
 			)}
-
-			{/* CSS Class Input (Alternative) */}
-			<div className="space-y-2">
-				<Label htmlFor="theme-class" className="text-sm font-medium">
-					Or Use a CSS Class
-				</Label>
-				<Input
-					id="theme-class"
-					placeholder="e.g., bg-gradient-to-br from-blue-500 to-purple-600"
-					disabled={disabled}
-					value={currentThemeClass || ""}
-					onChange={(e) => {
-						const classValue = e.target.value.trim();
-						if (classValue) {
-							onChange(`class:${classValue}`);
-						} else {
-							onChange(null);
-						}
-					}}
-				/>
-				<p className="text-xs text-muted-foreground">
-					Enter Tailwind CSS classes for a custom gradient or color
-				</p>
-			</div>
 		</div>
 	);
 }

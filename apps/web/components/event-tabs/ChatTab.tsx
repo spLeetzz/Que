@@ -36,9 +36,14 @@ export function ChatTab({
 
   const participantMap = React.useMemo(() => {
     const map: Record<string, { alias: string; colorClass: string }> = {};
-    if (participants) {
-      participants.forEach((p, i) => {
-        map[p.id] = { alias: p.alias, colorClass: AVATAR_COLORS[i % AVATAR_COLORS.length] };
+    if (participants && Array.isArray(participants)) {
+      participants.forEach((p: any, i: number) => {
+        const id = p?.id as string | undefined;
+        if (id) {
+          const alias: string = (p?.alias as string) || "Anonymous";
+          const colorClass = AVATAR_COLORS[i % AVATAR_COLORS.length] as string;
+          map[id] = { alias, colorClass };
+        }
       });
     }
     return map;

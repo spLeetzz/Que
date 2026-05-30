@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
@@ -11,7 +11,7 @@ import { Badge } from "~/components/ui/badge";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Loader2, CheckCircle, XCircle, Clock, User, FileText } from "lucide-react";
 
-export default function ValidateStatePage() {
+function ValidateStateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -170,5 +170,13 @@ export default function ValidateStatePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ValidateStatePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <ValidateStateContent />
+    </Suspense>
   );
 }
