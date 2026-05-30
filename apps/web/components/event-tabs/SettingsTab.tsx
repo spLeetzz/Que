@@ -70,9 +70,16 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold tracking-tight">Event Settings & Lifecycle</h3>
+        <p className="text-sm text-muted-foreground">
+          Manage event status, configuration, and advanced settings. Changes are saved automatically.
+        </p>
+      </div>
+      <div className="pt-2 space-y-6">
       {/* Lifecycle Card */}
-      <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
+      <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md rounded-2xl overflow-hidden">
         <CardHeader className="border-b border-border/40 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -165,7 +172,7 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
       </Card>
 
       {/* Settings Form Card */}
-      <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
+      <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md rounded-2xl overflow-hidden">
         <CardHeader className="border-b border-border/40 pb-4">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-secondary text-muted-foreground">
@@ -183,6 +190,7 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
           <EventSettingsForm eventId={eventId} />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

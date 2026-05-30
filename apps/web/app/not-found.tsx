@@ -18,7 +18,7 @@ export default function NotFound() {
         <CardContent>
           <Link href="/">
             <Button className="w-full">
-              <Home className="w-4 h-4 mr-2" />
+              <Home className="w-4 h-4 mr-2" suppressHydrationWarning />
               Go Home
             </Button>
           </Link>

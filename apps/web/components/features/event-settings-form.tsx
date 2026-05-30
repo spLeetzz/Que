@@ -1,9 +1,8 @@
 "use client";
-
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -13,400 +12,498 @@ import { useUpdateEvent } from "~/hooks/use-update-event";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ThemeSelector } from "~/components/features/theme-selector";
 import { toast } from "sonner";
+import { cn } from "~/lib/utils";
+import { Check, RotateCcw, Save } from "lucide-react";
 
 const formatDateTimeLocal = (date: Date | null | undefined | string): string => {
-	if (!date) return "";
-	const d = new Date(date);
-	if (isNaN(d.getTime())) return "";
-	const year = d.getFullYear();
-	const month = String(d.getMonth() + 1).padStart(2, "0");
-	const day = String(d.getDate()).padStart(2, "0");
-	const hours = String(d.getHours()).padStart(2, "0");
-	const minutes = String(d.getMinutes()).padStart(2, "0");
-	return `${year}-${month}-${day}T${hours}:${minutes}`;
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 const eventSettingsSchema = z.object({
-	// Basic Settings
-	title: z
-		.string()
-		.min(1, "Title is required")
-		.max(200, "Title must be 200 characters or less"),
-	description: z.string().optional(),
-	slug: z
-		.string()
-		.regex(/^[a-z0-9-]*$/, "Slug can only contain lowercase letters, numbers, and hyphens")
-		.nullable()
-		.optional(),
-
-	// Visibility Settings
-	visibility: z.enum(["public", "private"]),
-	resultVisibility: z.enum(["all", "creator_only"]),
-
-	// Behavior Settings
-	authRequired: z.boolean(),
-	multipleResponses: z.boolean(),
-	receiveEmails: z.boolean(),
-
-	// Advanced Settings
-	theme: z.string().nullable().optional(),
-	expiresAt: z.union([z.string(), z.date()]).nullable().optional(),
+  title: z.string().min(1, "Title is required").max(200, "Max 200 characters"),
+  description: z.string().optional(),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]*$/, "Only lowercase letters, numbers, and hyphens")
+    .nullable()
+    .optional(),
+  visibility: z.enum(["public", "private"]),
+  resultVisibility: z.enum(["all", "creator_only"]),
+  authRequired: z.boolean(),
+  multipleResponses: z.boolean(),
+  receiveEmails: z.boolean(),
+  theme: z.string().nullable().optional(),
+  expiresAt: z.union([z.string(), z.date()]).nullable().optional(),
 });
 
 type EventSettingsData = z.infer<typeof eventSettingsSchema>;
 
 interface EventSettingsFormProps {
-	eventId: string;
+  eventId: string;
+}
+
+// Toggle component replacing raw checkbox
+function Toggle({
+  checked,
+  onChange,
+  disabled,
+  id,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  id?: string;
+}) {
+  return (
+    <button
+      type="button"
+      id={id}
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+        checked ? "bg-primary" : "bg-muted"
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ease-in-out",
+          checked ? "translate-x-4" : "translate-x-0"
+        )}
+      />
+    </button>
+  );
+}
+
+// Radio option pill
+function RadioPill({
+  value,
+  current,
+  onChange,
+  disabled,
+  label,
+}: {
+  value: string;
+  current: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  const selected = value === current;
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(value)}
+      className={cn(
+        "relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+        selected
+          ? "bg-primary/10 border-primary/40 text-foreground"
+          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+      )}
+    >
+      {selected && <Check className="h-3 w-3 shrink-0" />}
+      {label}
+    </button>
+  );
+}
+
+// Section wrapper
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-0.5">
+        <h4 className="text-sm font-semibold text-foreground tracking-wide uppercase opacity-60">
+          {title}
+        </h4>
+        {description && (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+// Field wrapper
+function Field({
+  label,
+  hint,
+  error,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={htmlFor} className="text-sm font-medium">
+        {label}
+      </Label>
+      {children}
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+// Toggle row
+function ToggleRow({
+  id,
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-4 py-3 border-b border-border/30 last:border-0">
+      <div className="flex-1 min-w-0">
+        <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
+          {label}
+        </Label>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+      </div>
+      <Toggle id={id} checked={checked} onChange={onChange} disabled={disabled} />
+    </div>
+  );
 }
 
 export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
-	const { data: event, isLoading } = useEvent(eventId);
-	const updateEvent = useUpdateEvent(eventId);
+  const { data: event, isLoading } = useEvent(eventId);
+  const updateEvent = useUpdateEvent(eventId);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingRef = useRef(false);
 
-	const form = useForm<EventSettingsData>({
-		resolver: zodResolver(eventSettingsSchema) as any,
-		defaultValues: {
-			title: "",
-			description: "",
-			slug: null,
-			visibility: "public",
-			resultVisibility: "all",
-			authRequired: false,
-			multipleResponses: false,
-			receiveEmails: false,
-			theme: null,
-			expiresAt: "",
-		},
-	});
+  const form = useForm<EventSettingsData>({
+    resolver: zodResolver(eventSettingsSchema) as any,
+    defaultValues: {
+      title: "",
+      description: "",
+      slug: null,
+      visibility: "public",
+      resultVisibility: "all",
+      authRequired: false,
+      multipleResponses: false,
+      receiveEmails: false,
+      theme: null,
+      expiresAt: "",
+    },
+  });
 
-	// Populate form with event data when loaded
-	useEffect(() => {
-		if (event) {
-			form.reset({
-				title: event.title,
-				description: event.description ?? "",
-				slug: event.slug,
-				visibility: event.visibility,
-				resultVisibility: event.resultVisibility,
-				authRequired: event.authRequired,
-				multipleResponses: event.multipleResponses,
-				receiveEmails: event.receiveEmails,
-				theme: event.theme ?? null,
-				expiresAt: formatDateTimeLocal(event.expiresAt),
-			});
-		}
-	}, [event, form]);
+  useEffect(() => {
+    if (event) {
+      form.reset({
+        title: event.title,
+        description: event.description ?? "",
+        slug: event.slug,
+        visibility: event.visibility,
+        resultVisibility: event.resultVisibility,
+        authRequired: event.authRequired,
+        multipleResponses: event.multipleResponses,
+        receiveEmails: event.receiveEmails,
+        theme: event.theme ?? null,
+        expiresAt: formatDateTimeLocal(event.expiresAt),
+      });
+    }
+  }, [event, form]);
 
-	const onSubmit = async (data: EventSettingsData) => {
-		try {
-			const parsedData = {
-				...data,
-				expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-			};
-			await updateEvent.mutateAsync(parsedData as any);
-			toast.success("Event settings updated successfully!");
-		} catch (error) {
-			toast.error("Failed to update event settings. Please try again.");
-		}
-	};
+  const doSave = useCallback(
+    async (data: EventSettingsData) => {
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
+      try {
+        await updateEvent.mutateAsync({
+          ...data,
+          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+        } as any);
+        toast.success("Saved");
+        form.reset(data); // mark as not dirty
+      } catch {
+        toast.error("Failed to save");
+      } finally {
+        isSavingRef.current = false;
+      }
+    },
+    [updateEvent, form]
+  );
 
-	const { errors } = form.formState;
-	const isSubmitting = updateEvent.isLoading;
+  // Debounced auto-save on any field change
+  useEffect(() => {
+    const sub = form.watch((data) => {
+      if (!form.formState.isDirty) return;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        form.handleSubmit(doSave)();
+      }, 1200);
+    });
+    return () => {
+      sub.unsubscribe();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [form, doSave]);
 
-	// Show loading skeleton while event data is being fetched
-	if (isLoading) {
-		return (
-			<div className="max-w-2xl space-y-6">
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<Skeleton className="h-4 w-20" />
-						<Skeleton className="h-10 w-full" />
-					</div>
-					<div className="space-y-2">
-						<Skeleton className="h-4 w-24" />
-						<Skeleton className="h-24 w-full" />
-					</div>
-					<div className="space-y-2">
-						<Skeleton className="h-4 w-32" />
-						<Skeleton className="h-10 w-full" />
-					</div>
-				</div>
-			</div>
-		);
-	}
+  const { errors } = form.formState;
+  const isSubmitting = updateEvent.isLoading;
 
-	return (
-		<form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-			{/* Basic Settings Section */}
-			<div className="space-y-4">
-				<div>
-					<h3 className="text-lg font-semibold">Basic Settings</h3>
-					<p className="text-sm text-muted-foreground">
-						Configure the basic information for your event
-					</p>
-				</div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="space-y-3">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-				{/* Title Field */}
-				<div className="space-y-2">
-					<Label htmlFor="title" className="text-sm font-medium">
-						Title <span className="text-destructive">*</span>
-					</Label>
-					<Input
-						id="title"
-						placeholder="Enter event title"
-						{...form.register("title")}
-						disabled={isSubmitting}
-						aria-required="true"
-						aria-invalid={!!errors.title}
-						aria-describedby={errors.title ? "title-error" : undefined}
-					/>
-					{errors.title && (
-						<p id="title-error" className="text-sm text-destructive">
-							{errors.title.message}
-						</p>
-					)}
-				</div>
+  return (
+    <form onSubmit={form.handleSubmit(doSave)} className="space-y-8">
+      {/* Auto-save indicator */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {isSubmitting
+            ? "Saving…"
+            : form.formState.isDirty
+            ? "Unsaved changes"
+            : "All changes saved"}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => form.reset()}
+            disabled={isSubmitting || !form.formState.isDirty}
+            className="h-7 text-xs gap-1.5"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Discard
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isSubmitting || !form.formState.isDirty}
+            className="h-7 text-xs gap-1.5"
+          >
+            <Save className="h-3 w-3" />
+            Save now
+          </Button>
+        </div>
+      </div>
 
-				{/* Description Field */}
-				<div className="space-y-2">
-					<Label htmlFor="description" className="text-sm font-medium">
-						Description
-					</Label>
-					<Textarea
-						id="description"
-						placeholder="Add a description for your event (optional)"
-						rows={4}
-						{...form.register("description")}
-						disabled={isSubmitting}
-						aria-describedby="description-help"
-					/>
-					<p id="description-help" className="text-xs text-muted-foreground">
-						Provide additional context or instructions for respondents
-					</p>
-				</div>
+      {/* Basic */}
+      <Section title="Basic" description="Core event information">
+        <Field label="Title" htmlFor="title" error={errors.title?.message}>
+          <Input
+            id="title"
+            placeholder="Event title"
+            {...form.register("title")}
+            disabled={isSubmitting}
+          />
+        </Field>
 
-				{/* Slug Field */}
-				<div className="space-y-2">
-					<Label htmlFor="slug" className="text-sm font-medium">
-						Custom URL Slug
-					</Label>
-					<Input
-						id="slug"
-						placeholder="custom-url-slug"
-						{...form.register("slug")}
-						disabled={isSubmitting}
-						aria-invalid={!!errors.slug}
-						aria-describedby={errors.slug ? "slug-error" : "slug-help"}
-					/>
-					{errors.slug ? (
-						<p id="slug-error" className="text-sm text-destructive">
-							{errors.slug.message}
-						</p>
-					) : (
-						<p id="slug-help" className="text-xs text-muted-foreground">
-							Leave empty for auto-generated slug. Only lowercase letters, numbers, and hyphens
-							allowed.
-						</p>
-					)}
-				</div>
-			</div>
+        <Field
+          label="Description"
+          htmlFor="description"
+          hint="Optional context or instructions for respondents"
+        >
+          <Textarea
+            id="description"
+            placeholder="Add a description…"
+            rows={3}
+            {...form.register("description")}
+            disabled={isSubmitting}
+            className="resize-none"
+          />
+        </Field>
 
-			{/* Visibility Settings Section */}
-			<div className="space-y-4">
-				<div>
-					<h3 className="text-lg font-semibold">Visibility Settings</h3>
-					<p className="text-sm text-muted-foreground">
-						Control who can access your event and view results
-					</p>
-				</div>
+        <Field
+          label="URL Slug"
+          htmlFor="slug"
+          error={errors.slug?.message}
+          hint="Lowercase letters, numbers, and hyphens only. Leave empty for auto-generated."
+        >
+          <Input
+            id="slug"
+            placeholder="my-event-slug"
+            {...form.register("slug")}
+            disabled={isSubmitting}
+          />
+        </Field>
+      </Section>
 
-				{/* Event Visibility */}
-				<div className="space-y-2">
-					<Label className="text-sm font-medium">Event Visibility</Label>
-					<div className="flex gap-4">
-						<label className="flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								value="public"
-								{...form.register("visibility")}
-								disabled={isSubmitting}
-								className="w-4 h-4"
-							/>
-							<span className="text-sm">Public</span>
-						</label>
-						<label className="flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								value="private"
-								{...form.register("visibility")}
-								disabled={isSubmitting}
-								className="w-4 h-4"
-							/>
-							<span className="text-sm">Private</span>
-						</label>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Public events can be accessed by anyone with the link
-					</p>
-				</div>
+      {/* Visibility */}
+      <Section title="Visibility" description="Who can access and see results">
+        <Field label="Event access">
+          <Controller
+            control={form.control}
+            name="visibility"
+            render={({ field }) => (
+              <div className="flex gap-2">
+                <RadioPill
+                  value="public"
+                  current={field.value}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  label="Public"
+                />
+                <RadioPill
+                  value="private"
+                  current={field.value}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  label="Private"
+                />
+              </div>
+            )}
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Public events are accessible to anyone with the link
+          </p>
+        </Field>
 
-				{/* Result Visibility */}
-				<div className="space-y-2">
-					<Label className="text-sm font-medium">Result Visibility</Label>
-					<div className="flex gap-4">
-						<label className="flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								value="all"
-								{...form.register("resultVisibility")}
-								disabled={isSubmitting}
-								className="w-4 h-4"
-							/>
-							<span className="text-sm">All</span>
-						</label>
-						<label className="flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								value="creator_only"
-								{...form.register("resultVisibility")}
-								disabled={isSubmitting}
-								className="w-4 h-4"
-							/>
-							<span className="text-sm">Creator Only</span>
-						</label>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Choose who can view the event results and analytics
-					</p>
-				</div>
-			</div>
+        <Field label="Results visibility">
+          <Controller
+            control={form.control}
+            name="resultVisibility"
+            render={({ field }) => (
+              <div className="flex gap-2">
+                <RadioPill
+                  value="all"
+                  current={field.value}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  label="Everyone"
+                />
+                <RadioPill
+                  value="creator_only"
+                  current={field.value}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  label="Creator only"
+                />
+              </div>
+            )}
+          />
+        </Field>
+      </Section>
 
-			{/* Behavior Settings Section */}
-			<div className="space-y-4">
-				<div>
-					<h3 className="text-lg font-semibold">Behavior Settings</h3>
-					<p className="text-sm text-muted-foreground">
-						Configure how users can interact with your event
-					</p>
-				</div>
+      {/* Behavior */}
+      <Section title="Behavior" description="How participants interact with your event">
+        <div className="rounded-xl border border-border/40 bg-muted/20 px-4 divide-y divide-border/30">
+          <Controller
+            control={form.control}
+            name="authRequired"
+            render={({ field }) => (
+              <ToggleRow
+                id="authRequired"
+                label="Require authentication"
+                description="Participants must be logged in to respond"
+                checked={field.value}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="multipleResponses"
+            render={({ field }) => (
+              <ToggleRow
+                id="multipleResponses"
+                label="Allow multiple responses"
+                description="Same user can submit more than once"
+                checked={field.value}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="receiveEmails"
+            render={({ field }) => (
+              <ToggleRow
+                id="receiveEmails"
+                label="Email notifications"
+                description="Get notified by email for each new response"
+                checked={field.value}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+        </div>
+      </Section>
 
-				{/* Auth Required */}
-				<div className="flex items-center justify-between">
-					<div className="space-y-0.5">
-						<Label htmlFor="authRequired" className="text-sm font-medium">
-							Require Authentication
-						</Label>
-						<p className="text-xs text-muted-foreground">
-							Users must be logged in to respond
-						</p>
-					</div>
-					<input
-						type="checkbox"
-						id="authRequired"
-						{...form.register("authRequired")}
-						disabled={isSubmitting}
-						className="w-4 h-4"
-					/>
-				</div>
+      {/* Advanced */}
+      <Section title="Advanced" description="Theme and scheduling">
+        <Field label="Background theme">
+          <Controller
+            control={form.control}
+            name="theme"
+            render={({ field }) => (
+              <ThemeSelector
+                value={field.value ?? null}
+                onChange={(theme) =>
+                  form.setValue("theme", theme, { shouldDirty: true })
+                }
+                disabled={isSubmitting}
+              />
+            )}
+          />
+        </Field>
 
-				{/* Multiple Responses */}
-				<div className="flex items-center justify-between">
-					<div className="space-y-0.5">
-						<Label htmlFor="multipleResponses" className="text-sm font-medium">
-							Allow Multiple Responses
-						</Label>
-						<p className="text-xs text-muted-foreground">
-							Users can submit multiple responses
-						</p>
-					</div>
-					<input
-						type="checkbox"
-						id="multipleResponses"
-						{...form.register("multipleResponses")}
-						disabled={isSubmitting}
-						className="w-4 h-4"
-					/>
-				</div>
-
-				{/* Receive Emails */}
-				<div className="flex items-center justify-between">
-					<div className="space-y-0.5">
-						<Label htmlFor="receiveEmails" className="text-sm font-medium">
-							Email Notifications
-						</Label>
-						<p className="text-xs text-muted-foreground">
-							Receive email alerts for new responses
-						</p>
-					</div>
-					<input
-						type="checkbox"
-						id="receiveEmails"
-						{...form.register("receiveEmails")}
-						disabled={isSubmitting}
-						className="w-4 h-4"
-					/>
-				</div>
-			</div>
-
-			{/* Advanced Settings Section */}
-			<div className="space-y-4">
-				<div>
-					<h3 className="text-lg font-semibold">Advanced Settings</h3>
-					<p className="text-sm text-muted-foreground">
-						Optional settings for customization and scheduling
-					</p>
-				</div>
-
-				{/* Theme Selection */}
-				<div className="space-y-2">
-					<Label className="text-sm font-medium">Background Theme</Label>
-					<ThemeSelector
-						value={form.watch("theme") ?? null}
-						onChange={(theme) => form.setValue("theme", theme, { shouldDirty: true })}
-						disabled={isSubmitting}
-					/>
-				</div>
-
-				{/* Expiration Date */}
-				<div className="space-y-2">
-					<Label htmlFor="expiresAt" className="text-sm font-medium">
-						Expiration Date
-					</Label>
-					<Input
-						id="expiresAt"
-						type="datetime-local"
-						{...form.register("expiresAt")}
-						disabled={isSubmitting}
-						aria-invalid={!!errors.expiresAt}
-						aria-describedby={errors.expiresAt ? "expiresAt-error" : "expiresAt-help"}
-					/>
-					{errors.expiresAt ? (
-						<p id="expiresAt-error" className="text-sm text-destructive">
-							{errors.expiresAt.message}
-						</p>
-					) : (
-						<p id="expiresAt-help" className="text-xs text-muted-foreground">
-							Leave empty for no expiration. Event will automatically close after this date.
-						</p>
-					)}
-				</div>
-			</div>
-
-			{/* Form Actions */}
-			<div className="flex gap-3 pt-2">
-				<Button type="submit" disabled={isSubmitting || !form.formState.isDirty} size="lg">
-					{isSubmitting ? "Saving..." : "Save Changes"}
-				</Button>
-				<Button
-					type="button"
-					variant="outline"
-					onClick={() => form.reset()}
-					disabled={isSubmitting || !form.formState.isDirty}
-					size="lg"
-				>
-					Cancel
-				</Button>
-			</div>
-		</form>
-	);
+        <Field
+          label="Expiration date"
+          htmlFor="expiresAt"
+          hint="Leave empty for no expiration. Event closes automatically after this date."
+          error={errors.expiresAt?.message}
+        >
+          <Input
+            id="expiresAt"
+            type="datetime-local"
+            {...form.register("expiresAt")}
+            disabled={isSubmitting}
+          />
+        </Field>
+      </Section>
+    </form>
+  );
 }

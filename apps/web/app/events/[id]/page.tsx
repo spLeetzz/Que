@@ -365,7 +365,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 			<div className={cn("absolute top-20 left-10 -z-10 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
 			<div className={cn("absolute bottom-20 right-10 -z-10 w-96 h-96 rounded-full blur-3xl pointer-events-none", getGlowColor())} />
 
-			<div className="container max-w-4xl py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-500">
+			<div className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-500">
 				
 				{/* Back button if creator dashboard is open */}
 				{isCreator && (

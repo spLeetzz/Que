@@ -191,7 +191,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
 				</div>
 			</CardHeader>
 			<CardContent className="pt-0">
-				<div className="flex items-center justify-between gap-2 border-t border-border/40 pt-4 mt-2">
+				<div className="flex items-center justify-between gap-2 border-t border-border/40 pt-3 mb-3">
 					<div className="flex items-center gap-1.5 flex-wrap">
 						<Badge variant="outline" className={`text-[10px] font-bold px-2 py-0.5 rounded-lg tracking-wide uppercase ${getTypeColor(event.type)}`}>
 							{event.type}

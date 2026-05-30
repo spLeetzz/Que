@@ -37,24 +37,20 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      {/* Premium Google SaaS Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-primary/[0.03] to-transparent p-6 rounded-2xl border border-primary/10 shadow-sm shadow-primary/5">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">Dashboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage your active forms, quick polls, and banter rooms.</p>
-        </div>
-        <Link href="/events/create">
-          <Button className="rounded-xl shadow-md hover:shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all py-6 px-6 font-semibold">
-            <Plus className="w-5 h-5 mr-2 stroke-[2.5]" />
-            Create Event
-          </Button>
-        </Link>
+    <div className="space-y-4 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold tracking-tight">Dashboard</h3>
+        <p className="text-sm text-muted-foreground">
+          Manage your active forms, quick polls, and banter rooms.
+        </p>
       </div>
 
+      <div className="pt-2 space-y-6">
+
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-hover border border-border/50 shadow-sm relative overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-primary" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-xs uppercase tracking-wider font-bold text-muted-foreground">My Total Events</CardTitle>
@@ -70,7 +66,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border border-border/50 shadow-sm relative overflow-hidden">
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-emerald-500" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Global Public Hub</CardTitle>
@@ -86,7 +82,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border border-border/50 shadow-sm relative overflow-hidden">
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-indigo-500" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Response Analytics</CardTitle>
@@ -109,20 +105,23 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left/Middle Column - My Events */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-center pb-2 border-b border-border/40">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">My Events</h2>
-            <Badge variant="secondary" className="rounded-full px-3 py-1 font-semibold text-xs bg-primary/5 text-primary border-primary/10">
-              {myEvents.length} total
-            </Badge>
-          </div>
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="text-lg font-semibold">My Events</h4>
+        <Link href="/events/create">
+          <Button className="rounded-xl shadow-sm font-semibold">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Event
+          </Button>
+        </Link>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left/Middle Column - My Events */}
+        <div className="lg:col-span-2 space-y-4">
           {myEvents && myEvents.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {myEvents.map((event) => (
-                <Card key={event.id} className="card-hover border border-border/50 shadow-sm flex flex-col justify-between h-[210px]">
+                <Card key={event.id} className="shadow-xl border-border bg-card/90 backdrop-blur-md flex flex-col justify-between h-[210px]">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start gap-2">
                       <CardTitle className="text-lg font-bold leading-tight truncate text-foreground pr-2" title={event.title}>
@@ -171,7 +170,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <Card className="border border-dashed border-border/60 bg-secondary/10">
+            <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-14 text-center space-y-4">
                 <div className="p-4 rounded-full bg-primary/5 text-primary">
                   <FileText className="w-10 h-10" />
@@ -191,15 +190,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Column - Public Showcase */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center pb-2 border-b border-border/40">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">Discover Hub</h2>
-          </div>
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold">Discover Hub</h4>
 
           {publicEvents && publicEvents.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {publicEvents.slice(0, 5).map((event) => (
-                <Card key={event.id} className="card-hover border border-border/45 shadow-sm p-4 relative overflow-hidden">
+                <Card key={event.id} className="shadow-xl border-border bg-card/90 backdrop-blur-md p-4 relative overflow-hidden">
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-1">
                       <h4 className="font-bold text-sm text-foreground truncate max-w-[170px]" title={event.title}>
@@ -225,11 +222,12 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <Card className="border border-dashed border-border/60 bg-secondary/5 py-8 text-center text-muted-foreground text-xs">
+            <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md border-dashed py-8 text-center text-muted-foreground text-xs">
               No public events available at the moment.
             </Card>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

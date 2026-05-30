@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -43,110 +43,141 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
-  --radius: 8px;
-  
-  /* Professional SaaS Light Mode */
-  --background: #ffffff;
-  --foreground: #0f172a;
-  
-  --card: #f8fafc;
-  --card-foreground: #0f172a;
-  
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  
-  --primary: #3b82f6; /* Clean professional blue */
-  --primary-foreground: #ffffff;
-  
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  
-  --accent: #eff6ff;
-  --accent-foreground: #3b82f6;
-  
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #f1f5f9;
-  --ring: #3b82f6;
-  
-  --chart-1: #3b82f6;
-  --chart-2: #8b5cf6;
-  --chart-3: #ec4899;
-  --chart-4: #f59e0b;
-  --chart-5: #10b981;
-  
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eff6ff;
-  --sidebar-accent-foreground: #3b82f6;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #3b82f6;
-}
-
+:root,
 .dark {
-  /* Professional SaaS Dark Mode */
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  
-  --popover: #1e293b;
-  --popover-foreground: #f1f5f9;
-  
-  --primary: #60a5fa; /* Bright blue for dark mode */
-  --primary-foreground: #0f172a;
-  
-  --secondary: #1e293b;
-  --secondary-foreground: #f1f5f9;
-  
-  --muted: #334155;
-  --muted-foreground: #cbd5e1;
-  
-  --accent: #1e3a8a;
-  --accent-foreground: #60a5fa;
-  
+  --background: #0e0e0e;
+  --foreground: #e8e8e8;
+  --card: rgba(30, 30, 30, 0.75);
+  --card-foreground: #e8e8e8;
+  --popover: rgba(26, 26, 26, 0.9);
+  --popover-foreground: #e8e8e8;
+  --primary: #d4d4d4;
+  --primary-foreground: #0e0e0e;
+  --secondary: rgba(30, 30, 30, 0.6);
+  --secondary-foreground: #e8e8e8;
+  --muted: rgba(42, 42, 42, 0.6);
+  --muted-foreground: #8a8a8a;
+  --accent: rgba(34, 34, 34, 0.7);
+  --accent-foreground: #d4d4d4;
   --destructive: #f87171;
-  --border: #334155;
-  --input: #1e293b;
-  --ring: #60a5fa;
-  
-  --chart-1: #60a5fa;
+  --ring: #d4d4d4;
+  --chart-1: #d4d4d4;
   --chart-2: #a78bfa;
   --chart-3: #f472b6;
   --chart-4: #fbbf24;
   --chart-5: #34d399;
-  
-  --sidebar: #1e293b;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #60a5fa;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #1e3a8a;
-  --sidebar-accent-foreground: #60a5fa;
-  --sidebar-border: #334155;
-  --sidebar-ring: #60a5fa;
+  --sidebar: rgba(20, 20, 20, 0.85);
+  --sidebar-foreground: #e8e8e8;
+  --sidebar-primary: #d4d4d4;
+  --sidebar-primary-foreground: #0e0e0e;
+  --sidebar-accent: rgba(34, 34, 34, 0.7);
+  --sidebar-accent-foreground: #d4d4d4;
+  --sidebar-ring: #d4d4d4;
+    --border: rgba(255, 255, 255, 0.15);
+  --input: rgba(26, 26, 26, 0.8);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50 transition-colors duration-200;
+    @apply border-border outline-ring/50;
     font-family: var(--font-sans);
   }
+
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-background text-foreground relative min-h-screen overflow-x-hidden antialiased;
+    @apply text-foreground relative min-h-screen overflow-x-hidden antialiased;
+    background-color: #0e0e0e;
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Better text rendering for headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  
+  p {
+    line-height: 1.65;
+  }
+
+  div[data-slot="card"] {
+    background-color: var(--card) !important;
+    color: var(--card-foreground) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+
+  /* Force visible borders everywhere */
+  input, textarea, select,
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"] {
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+
+  input:focus, textarea:focus, select:focus,
+  [data-slot="input"]:focus,
+  [data-slot="textarea"]:focus,
+  [data-slot="select-trigger"]:focus {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  div[data-slot="card"] {
+    background-color: var(--card) !important;
+    color: var(--card-foreground) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Table borders */
+  table { border-collapse: collapse; }
+  th, td { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  thead th { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
+
+  /* Separator */
+  [data-slot="separator"],
+  hr {
+    border-color: rgba(255, 255, 255, 0.12);
   }
 }
 
-/* Subtle interactions */
-.card-hover {
-  transition: all 0.2s ease;
+button[data-slot="button"] {
+  @apply transition-all duration-200 ease-out;
 }
-.card-hover:hover {
-  @apply shadow-sm;
+button[data-slot="button"]:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
 }
+button[data-slot="button"]:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+div[data-slot="card"] {
+  @apply transition-all duration-300 ease-out;
+}
+div[data-slot="card"]:hover {
+  background-color: rgba(36, 36, 36, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { @apply bg-secondary/30; }
+::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-primary/50; }

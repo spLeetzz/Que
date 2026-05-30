@@ -56,19 +56,21 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with Export */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Results & Responses</h2>
+        <div className="space-y-1">
+          <h3 className="text-xl font-bold tracking-tight">Results & Responses</h3>
           <p className="text-sm text-muted-foreground">View and export all event data</p>
         </div>
         <ExportMenu eventTitle={eventTitle} fullAnalytics={fullAnalytics} />
       </div>
 
+      <div className="pt-2 space-y-6">
+
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -77,7 +79,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
             <div className="text-2xl font-bold">{responses?.responses.length || 0}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Participants</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +88,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
             <div className="text-2xl font-bold">{participants?.length || 0}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Questions</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -108,7 +110,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
 
         {/* Responses Tab */}
         <TabsContent value="responses" className="space-y-4">
-          <Card>
+          <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
             <CardHeader>
               <CardTitle>All Responses</CardTitle>
               <CardDescription>Individual responses submitted to this event</CardDescription>
@@ -164,7 +166,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
 
         {/* Participants Tab */}
         <TabsContent value="participants" className="space-y-4">
-          <Card>
+          <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
             <CardHeader>
               <CardTitle>Participants</CardTitle>
               <CardDescription>People who joined this event</CardDescription>
@@ -216,7 +218,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
               .filter((i) => i.category === "question")
               .map((item) => <QuestionAnswers key={item.id} item={item} />)
           ) : (
-            <Card>
+            <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
               <CardContent className="py-8 text-center text-muted-foreground">
                 No questions in this event
               </CardContent>
@@ -224,6 +226,7 @@ export function ResultsTab({ eventId, eventTitle, isConnected }: ResultsTabProps
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
@@ -232,7 +235,7 @@ function QuestionAnswers({ item }: { item: { id: string; value: string; category
   const { data: answers } = trpc.answers.listByItem.useQuery({ itemId: item.id });
 
   return (
-    <Card>
+    <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
       <CardHeader>
         <CardTitle className="text-lg">{item.value}</CardTitle>
         <div className="flex gap-2">

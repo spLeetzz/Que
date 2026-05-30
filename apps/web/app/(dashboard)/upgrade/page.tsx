@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { CheckIcon, Zap, Building2, Sparkles } from "lucide-react";
@@ -10,51 +10,56 @@ const PLANS = [
   {
     name: "Free",
     price: "$0",
-    period: "/ month",
-    desc: "Perfect for personal use and small gatherings.",
+    period: "forever",
+    desc: "Create unlimited polls, forms, and banters for as long as the app is alive.",
     icon: Sparkles,
-    color: "text-muted-foreground",
-    iconBg: "bg-secondary",
-    accent: "bg-border",
-    features: ["Up to 3 active events", "100 responses per event", "Standard analytics", "Public event sharing"],
+    color: "text-emerald-500",
+    iconBg: "bg-emerald-500/10",
+    accent: "bg-emerald-500",
+    features: [
+      "Unlimited events (polls, forms, banters)",
+      "Unlimited responses",
+      "Real-time WebSocket support",
+      "Public event sharing",
+      "Standard analytics",
+      "Available forever while app is live"
+    ],
     cta: "Current Plan",
     ctaVariant: "outline" as const,
     disabled: true,
     recommended: false,
   },
   {
-    name: "Pro",
-    price: "$19",
-    period: "/ month",
-    desc: "For creators, organizers, and educators.",
+    name: "Premium",
+    price: "Contact",
+    period: "",
+    desc: "Create service forms for your app with API integration and advanced features.",
     icon: Zap,
     color: "text-primary",
     iconBg: "bg-primary/10",
     accent: "bg-primary",
-    features: ["Unlimited events", "Unlimited responses", "Real-time WebSocket analytics", "Export CSV & JSON", "Custom slugs & branding", "Priority support"],
-    cta: "Upgrade to Pro",
+    features: [
+      "Everything in Free",
+      "Service Forms API access",
+      "Personal Access Tokens (PAT)",
+      "Hidden fields & metadata",
+      "State token generation",
+      "Custom redirect URLs",
+      "Priority support"
+    ],
+    cta: "Contact for Premium",
     ctaVariant: "default" as const,
     disabled: false,
     recommended: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    desc: "Tailored for large organizations and teams.",
-    icon: Building2,
-    color: "text-indigo-500",
-    iconBg: "bg-indigo-500/10",
-    accent: "bg-indigo-500",
-    features: ["Dedicated support rep", "Multi-user team sharing", "SAML SSO auth", "99.9% uptime SLA", "Custom integrations", "On-premise options"],
-    cta: "Contact Sales",
-    ctaVariant: "outline" as const,
-    disabled: false,
-    recommended: false,
+    contactEmail: "adityapratap2404@gmail.com",
   },
 ];
 
 export default function UpgradePage() {
+  const handleContactPremium = () => {
+    window.location.href = "mailto:adityapratap2404@gmail.com?subject=Premium Plan Inquiry - Service Forms";
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       {/* Header */}
@@ -64,12 +69,12 @@ export default function UpgradePage() {
         </Badge>
         <h1 className="text-4xl font-extrabold tracking-tight">Choose your plan</h1>
         <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-          Start free. Scale up when you need more power. No hidden fees.
+          Start free forever. Upgrade to Premium for service forms and API access.
         </p>
       </div>
 
       {/* Cards */}
-      <div className="grid gap-6 md:grid-cols-3 items-start">
+      <div className="grid gap-6 md:grid-cols-2 items-stretch max-w-4xl mx-auto">
         {PLANS.map((plan) => {
           const Icon = plan.icon;
           return (
@@ -102,7 +107,7 @@ export default function UpgradePage() {
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-black tracking-tight">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-muted-foreground font-medium">{plan.period}</span>}
+                  {plan.period && <span className="text-sm text-muted-foreground font-medium"> {plan.period}</span>}
                 </div>
               </CardHeader>
 
@@ -128,7 +133,15 @@ export default function UpgradePage() {
                       : "border-border/60"
                   }`}
                   disabled={plan.disabled}
-                  onClick={() => !plan.disabled && toast.success(`Redirecting to ${plan.name} checkout…`)}
+                  onClick={() => {
+                    if (!plan.disabled) {
+                      if (plan.contactEmail) {
+                        handleContactPremium();
+                      } else {
+                        toast.success(`Redirecting to ${plan.name} checkout…`);
+                      }
+                    }
+                  }}
                 >
                   {plan.cta}
                 </Button>
@@ -137,6 +150,37 @@ export default function UpgradePage() {
           );
         })}
       </div>
+
+      {/* Premium Info Section */}
+      <Card className="max-w-4xl mx-auto border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            How Premium Service Forms Work
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Service Forms</strong> allow you to integrate Que forms directly into your application via API. Perfect for collecting user feedback, surveys, or any data collection needs within your own app.
+          </p>
+          <div className="space-y-2">
+            <p className="font-semibold text-foreground">Key Features:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Generate Personal Access Tokens (PAT) for API authentication</li>
+              <li>Create forms programmatically with hidden fields and metadata</li>
+              <li>Generate one-time state tokens for secure user access</li>
+              <li>Redirect users back to your app after form submission</li>
+              <li>Track responses and analytics through the API</li>
+            </ul>
+          </div>
+          <p>
+            <strong className="text-foreground">Use Case Example:</strong> Your SaaS app needs to collect customer feedback. Create a service form via API, generate a state token for each user, and embed the form link in your app. After submission, users are redirected back to your app with the response data.
+          </p>
+          <p className="text-xs">
+            Contact <a href="mailto:adityapratap2404@gmail.com" className="text-primary hover:underline font-medium">adityapratap2404@gmail.com</a> to discuss your requirements and get started with Premium.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Bottom note */}
       <p className="text-center text-xs text-muted-foreground pb-4">

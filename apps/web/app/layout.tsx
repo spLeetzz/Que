@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
-const geistSans = localFont({
-	src: "./fonts/GeistVF.woff",
-	variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-	src: "./fonts/GeistMonoVF.woff",
-	variable: "--font-geist-mono",
+const inter = Inter({
+	subsets: ["latin"],
+	variable: "--font-sans",
+	display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,8 +20,8 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" suppressHydrationWarning className="bg-background">
-			<body className={`${geistSans.variable} ${geistMono.variable}`}>
+		<html lang="en" suppressHydrationWarning className="dark" style={{ colorScheme: 'dark' }}>
+			<body className={inter.variable}>
 				<GlobalProviders>{children}</GlobalProviders>
 			</body>
 		</html>

@@ -1,69 +1,52 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 
 interface BackgroundImageProps {
-	type?: "picsum" | "unsplash" | "theme";
-	themeUrl?: string | null;
-	isEventPage?: boolean;
-	className?: string;
+  type?: "picsum" | "unsplash" | "theme";
+  themeUrl?: string | null;
+  isEventPage?: boolean;
+  className?: string;
 }
 
-export function BackgroundImage({
-	type = "picsum",
-	themeUrl,
-	isEventPage = false,
-	className,
+function generateUrl(type: string, themeUrl?: string | null) {
+  if ((type === "theme" || type === "unsplash") && themeUrl) return themeUrl;
+  const id = Math.floor(Math.random() * 1000);
+  return `https://picsum.photos/seed/${id}/1920/1080`;
+}
+
+export const BackgroundImage = memo(function BackgroundImage({
+  type = "picsum",
+  themeUrl,
+  isEventPage = false,
+  className,
 }: BackgroundImageProps) {
-	const [imageUrl, setImageUrl] = useState<string>("");
-	const [key, setKey] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [url] = useState(() => generateUrl(type, themeUrl));
 
-	useEffect(() => {
-		// Generate new random image URL
-		const generateUrl = () => {
-			if (type === "theme" && themeUrl) {
-				return themeUrl;
-			} else if (type === "unsplash" && themeUrl) {
-				return themeUrl;
-			} else {
-				// Picsum random image
-				const randomId = Math.random().toString(36).substring(7);
-				return `https://picsum.photos/seed/${randomId}/1920/1080?blur=10`;
-			}
-		};
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLoaded(true);
+    img.src = url;
+  }, [url]);
 
-		setImageUrl(generateUrl());
-	}, [type, themeUrl, key]);
+  if (!loaded) return null;
 
-	// Change image every 3 seconds for picsum backgrounds
-	useEffect(() => {
-		if (type !== "picsum") return;
-
-		const interval = setInterval(() => {
-			setKey((prev) => prev + 1);
-		}, 3000);
-
-		return () => clearInterval(interval);
-	}, [type]);
-
-	if (!imageUrl) return null;
-
-	return (
-		<div
-			className={cn(
-				"absolute inset-0 -z-10 bg-cover bg-center pointer-events-none",
-				type === "picsum" ? "opacity-40 blur-xl" : "opacity-15 blur-sm",
-				className
-			)}
-			style={{
-				backgroundImage: `url(${imageUrl})`,
-				backgroundSize: "cover",
-				backgroundPosition: "center",
-				backgroundRepeat: "no-repeat",
-				backgroundAttachment: "fixed",
-			}}
-			key={key}
-		/>
-	);
-}
+  return (
+    <div
+      className={cn(
+        "fixed inset-0 bg-cover bg-center pointer-events-none transition-opacity duration-1000",
+        type === "picsum" ? "opacity-40" : "opacity-15",
+        className
+      )}
+      style={{
+        backgroundImage: `url(${url})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        filter: type === "picsum" ? "blur(40px)" : "blur(8px)",
+        zIndex: 0,
+      }}
+    />
+  );
+});

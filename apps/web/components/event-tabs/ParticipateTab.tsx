@@ -30,15 +30,23 @@ export function ParticipateTab({
   // Show success message after submission
   if (submitted) {
     return (
-      <Card className="w-full text-center shadow-xl border-border bg-card/90 backdrop-blur-md">
-        <CardContent className="pt-12 pb-12 space-y-5">
-          <CheckCircleIcon className="size-16 text-emerald-500 mx-auto animate-bounce" />
-          <h2 className="text-2xl font-bold">Response Recorded!</h2>
-          <p className="text-muted-foreground text-sm">
-            Thank you for participating in {event.title}. Your feedback has been safely logged.
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-xl font-bold tracking-tight">Response Submitted</h3>
+          <p className="text-sm text-muted-foreground">
+            Your response has been recorded successfully.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+        <Card className="w-full text-center shadow-xl border-border bg-card/90 backdrop-blur-md">
+          <CardContent className="pt-12 pb-12 space-y-5">
+            <CheckCircleIcon className="size-16 text-emerald-500 mx-auto animate-bounce" />
+            <h2 className="text-2xl font-bold">Response Recorded!</h2>
+            <p className="text-muted-foreground text-sm">
+              Thank you for participating in {event.title}. Your feedback has been safely logged.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -46,35 +54,43 @@ export function ParticipateTab({
 
   // Form/Poll interface - NO CHAT
   return (
-    <form onSubmit={onFormSubmit} className="space-y-6">
-      <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
-        <CardContent className="pt-6 space-y-6">
-          {questionItems.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12 text-sm italic">
-              No questions added yet to this event.
-            </p>
-          ) : (
-            questionItems.map((item) => (
-              <QuestionRenderer
-                key={item.id}
-                item={item}
-                answer={answers[item.id] ?? []}
-                onChange={(val) => onInputChange(item.id, val)}
-                error={formErrors[item.id]}
-              />
-            ))
-          )}
-        </CardContent>
-      </Card>
-      {questionItems.length > 0 && (
-        <Button
-          type="submit"
-          className="w-full h-11 text-sm font-semibold tracking-wide shadow-lg hover:shadow-xl transition-all"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Submitting Answers..." : "Submit Response"}
-        </Button>
-      )}
-    </form>
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold tracking-tight">Submit Your Response</h3>
+        <p className="text-sm text-muted-foreground">
+          Answer the questions below and submit your response. All required fields must be completed.
+        </p>
+      </div>
+      <form onSubmit={onFormSubmit} className="space-y-6 pt-2">
+        <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md">
+          <CardContent className="pt-6 space-y-6">
+            {questionItems.length === 0 ? (
+              <p className="text-center text-muted-foreground py-12 text-sm italic">
+                No questions added yet to this event.
+              </p>
+            ) : (
+              questionItems.map((item) => (
+                <QuestionRenderer
+                  key={item.id}
+                  item={item}
+                  answer={answers[item.id] ?? []}
+                  onChange={(val) => onInputChange(item.id, val)}
+                  error={formErrors[item.id]}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+        {questionItems.length > 0 && (
+          <Button
+            type="submit"
+            className="w-full h-11 text-sm font-semibold tracking-wide shadow-lg hover:shadow-xl transition-all"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting Answers..." : "Submit Response"}
+          </Button>
+        )}
+      </form>
+    </div>
   );
 }

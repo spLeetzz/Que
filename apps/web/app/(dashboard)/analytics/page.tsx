@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center gap-3 flex-wrap">
           {processedData?.responses && (
             <Button variant="outline" onClick={handleExportCSV} className="rounded-xl border-border/60 font-semibold gap-2 h-10">
-              <Download className="w-4 h-4" /> Export CSV
+              <Download className="w-4 h-4" suppressHydrationWarning /> Export CSV
             </Button>
           )}
           <Select value={selectedEventId} onValueChange={setSelectedEventId}>
@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
         <Card className="border border-dashed border-border/60 rounded-2xl">
           <CardContent className="py-20 text-center space-y-4">
             <div className="size-16 rounded-full bg-indigo-500/8 text-indigo-500 flex items-center justify-center mx-auto">
-              <BarChart3 className="w-8 h-8" />
+              <BarChart3 className="w-8 h-8" suppressHydrationWarning />
             </div>
             <div>
               <h3 className="font-bold text-lg">Select an event to analyze</h3>
@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
                 <div className={`absolute top-0 left-0 w-full h-[3px] ${bar}`} />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-5">
                   <CardTitle className="text-xs uppercase tracking-wider font-bold text-muted-foreground">{label}</CardTitle>
-                  <div className={`p-2 rounded-lg ${bg} ${color}`}><Icon className="h-4 w-4" /></div>
+                  <div className={`p-2 rounded-lg ${bg} ${color}`}><Icon className="h-4 w-4" suppressHydrationWarning /></div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="text-3xl font-extrabold tracking-tight">{value}</div>
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
               <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
                 <CardHeader className="border-b border-border/40 pb-4">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-primary/8 text-primary"><Activity className="h-4 w-4" /></div>
+                    <div className="p-1.5 rounded-lg bg-primary/8 text-primary"><Activity className="h-4 w-4" suppressHydrationWarning /></div>
                     <div><CardTitle className="text-base font-bold">Response Timeline</CardTitle><CardDescription className="text-xs">Responses over time</CardDescription></div>
                   </div>
                 </CardHeader>
@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
                     <div className="divide-y divide-border/40">
                       {processedData.timeline.map((point, idx) => (
                         <div key={idx} className="flex justify-between items-center px-6 py-3.5 hover:bg-secondary/30 transition-colors">
-                          <div className="flex items-center gap-2 text-sm font-medium"><CalendarDays className="size-3.5 text-muted-foreground" />{point.date}</div>
+                          <div className="flex items-center gap-2 text-sm font-medium"><CalendarDays className="size-3.5 text-muted-foreground" suppressHydrationWarning />{point.date}</div>
                           <div className="flex gap-2">
                             <Badge className="rounded-full px-2.5 text-[10px] font-bold bg-primary/10 text-primary border-primary/20">{point.responses} responses</Badge>
                             {point.participants !== point.responses && <Badge variant="outline" className="rounded-full px-2.5 text-[10px] font-bold">{point.participants} participants</Badge>}
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
               <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
                 <CardHeader className="border-b border-border/40 pb-4">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-amber-500/8 text-amber-500"><Target className="h-4 w-4" /></div>
+                    <div className="p-1.5 rounded-lg bg-amber-500/8 text-amber-500"><Target className="h-4 w-4" suppressHydrationWarning /></div>
                     <div><CardTitle className="text-base font-bold">Abandonment Funnel</CardTitle><CardDescription className="text-xs">Where participants drop off</CardDescription></div>
                   </div>
                 </CardHeader>
@@ -278,7 +278,7 @@ export default function AnalyticsPage() {
                       <div className={`absolute top-0 left-0 w-full h-[3px] ${bar}`} />
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-5">
                         <CardTitle className="text-xs uppercase tracking-wider font-bold text-muted-foreground">{label}</CardTitle>
-                        <div className={`p-2 rounded-lg ${bg} ${color}`}><Icon className="h-4 w-4" /></div>
+                        <div className={`p-2 rounded-lg ${bg} ${color}`}><Icon className="h-4 w-4" suppressHydrationWarning /></div>
                       </CardHeader>
                       <CardContent><div className="text-3xl font-extrabold tracking-tight">{value}</div></CardContent>
                     </Card>
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
                 <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
                   <CardHeader className="border-b border-border/40 pb-4">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-primary/8 text-primary"><ListChecks className="h-4 w-4" /></div>
+                      <div className="p-1.5 rounded-lg bg-primary/8 text-primary"><ListChecks className="h-4 w-4" suppressHydrationWarning /></div>
                       <div><CardTitle className="text-base font-bold">Recent Participant Journeys</CardTitle><CardDescription className="text-xs">Latest 10 participant records</CardDescription></div>
                     </div>
                   </CardHeader>
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
               <Card className="border border-border/50 shadow-sm rounded-2xl overflow-hidden">
                 <CardHeader className="border-b border-border/40 pb-4">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-indigo-500/8 text-indigo-500"><Users className="h-4 w-4" /></div>
+                    <div className="p-1.5 rounded-lg bg-indigo-500/8 text-indigo-500"><Users className="h-4 w-4" suppressHydrationWarning /></div>
                     <div><CardTitle className="text-base font-bold">Individual Responses</CardTitle><CardDescription className="text-xs">{processedData.responses?.pagination.totalResponses || 0} total recorded</CardDescription></div>
                   </div>
                 </CardHeader>

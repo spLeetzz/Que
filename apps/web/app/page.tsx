@@ -19,13 +19,16 @@ export default function Home() {
   return (
     <div className="min-h-screen text-foreground relative overflow-hidden">
       <BackgroundImage type="picsum" />
-      
+
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm relative">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight hover:opacity-90 transition-opacity">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold text-lg tracking-tight hover:opacity-90 transition-opacity"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Zap className="h-5 w-5" />
+              <Zap className="h-5 w-5" suppressHydrationWarning />
             </div>
             <span>Que</span>
           </Link>
@@ -49,7 +52,9 @@ export default function Home() {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" size="sm">Log In</Button>
+                  <Button variant="ghost" size="sm">
+                    Log In
+                  </Button>
                 </Link>
                 <Link href="/signup">
                   <Button size="sm">Get Started</Button>
@@ -61,11 +66,11 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4 sm:py-32">
+      <section className="relative py-20 px-4 sm:py-32 z-10">
         <div className="container mx-auto max-w-5xl">
           <div className="space-y-8 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Zap className="h-3 w-3" />
+              <Zap className="h-3 w-3" suppressHydrationWarning />
               Interactive Forms, Polls & Real-Time Chat
             </div>
 
@@ -74,7 +79,8 @@ export default function Home() {
                 Create Interactive Forms & Polls in Seconds
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Build beautiful forms, conduct instant polls, and engage participants with real-time chat rooms. No coding required.
+                Build beautiful forms, conduct instant polls, and engage participants with real-time
+                chat rooms. No coding required.
               </p>
             </div>
 
@@ -105,7 +111,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="border-t border-border py-16 px-4 sm:py-24 bg-secondary/40">
+      <section className="border-t border-border py-16 px-4 sm:py-24 bg-secondary/20 relative z-10">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-16 space-y-3">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Powerful Features</h2>
@@ -117,27 +123,35 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                icon: <MessageSquare className="h-6 w-6" />,
+                icon: <MessageSquare className="h-6 w-6" suppressHydrationWarning />,
                 title: "Live Chat Rooms",
-                description: "Create real-time banter rooms for participants to engage and discuss results instantly."
+                description:
+                  "Create real-time banter rooms for participants to engage and discuss results instantly.",
               },
               {
-                icon: <Users className="h-6 w-6" />,
+                icon: <Users className="h-6 w-6" suppressHydrationWarning />,
                 title: "Instant Engagement",
-                description: "Watch responses populate live on your dashboard. Real-time participation tracking."
+                description:
+                  "Watch responses populate live on your dashboard. Real-time participation tracking.",
               },
               {
-                icon: <Gauge className="h-6 w-6" />,
+                icon: <Gauge className="h-6 w-6" suppressHydrationWarning />,
                 title: "Smart Analytics",
-                description: "Get instant insights with beautiful analytics dashboards and response visualizations."
-              }
+                description:
+                  "Get instant insights with beautiful analytics dashboards and response visualizations.",
+              },
             ].map((feature, i) => (
-              <div key={i} className="space-y-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
+              <div
+                key={i}
+                className="space-y-4 p-6 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow"
+              >
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   {feature.icon}
                 </div>
                 <h3 className="font-semibold text-lg">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
@@ -145,7 +159,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:py-24">
+      <section className="py-16 px-4 sm:py-24 relative z-10">
         <div className="container mx-auto max-w-3xl text-center space-y-8">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
             Ready to engage your audience?
@@ -169,13 +183,13 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 px-4">
+      <footer className="border-t border-border py-8 px-4 relative z-10">
         <div className="container mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 font-semibold text-foreground">
-            <Zap className="h-4 w-4" />
+            <Zap className="h-4 w-4" suppressHydrationWarning />
             Que
           </div>
-          <p>© 2024 Que. All rights reserved.</p>
+          <p>© Que. All rights reserved.</p>
         </div>
       </footer>
     </div>

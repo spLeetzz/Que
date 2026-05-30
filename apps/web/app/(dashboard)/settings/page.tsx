@@ -18,7 +18,7 @@ import { Separator } from "~/components/ui/separator";
 import { toast } from "sonner";
 import {
   Loader2, Key, Copy, Trash2, Plus, FileCode, ExternalLink,
-  Clock, User, Lock, Shield, Code2, AlertTriangle, CheckCircle,
+  Clock, User, Lock, Shield, Code2, AlertTriangle, CheckCircle, Zap,
 } from "lucide-react";
 
 type HiddenField = { key: string; required: boolean; type: "string" | "number" | "boolean" };
@@ -251,54 +251,76 @@ export default function SettingsPage() {
               <CardDescription>Generate API tokens for programmatic access. Keep tokens secure — treat them like passwords.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-               {patStatus && patStatus.hasActivePAT && (
-                <div className="flex justify-between items-center p-4 border rounded-xl bg-muted/30">
+              {/* Premium Required Notice */}
+              <Alert className="border-primary/30 bg-primary/5">
+                <Lock className="h-4 w-4 text-primary" />
+                <AlertDescription className="space-y-3">
                   <div>
-                    <p className="font-semibold">{patStatus.name || "Active Token"}</p>
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-                      Last used: {patStatus.lastUsedAt ? new Date(patStatus.lastUsedAt).toLocaleString() : "Never"}
+                    <p className="font-semibold text-foreground">Premium Feature</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Personal Access Tokens are available with the Premium plan. Upgrade to create service forms and integrate Que with your applications.
                     </p>
                   </div>
-                  <div className="flex gap-2 items-center">
-                    <Badge variant="default">
-                      Active
-                    </Badge>
-                    <Button variant="destructive" size="sm" onClick={() => { if (confirm("Revoke this token?")) revokePATMutation.mutate(); }}>
-                      <Trash2 className="h-4 w-4" />
+                  <Button asChild variant="default" size="sm">
+                    <a href="/upgrade">
+                      <Zap className="h-4 w-4 mr-2" />
+                      View Premium Plans
+                    </a>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+
+              {/* Locked PAT Section */}
+              <div className="opacity-50 pointer-events-none">
+                {patStatus && patStatus.hasActivePAT && (
+                  <div className="flex justify-between items-center p-4 border rounded-xl bg-muted/30">
+                    <div>
+                      <p className="font-semibold">{patStatus.name || "Active Token"}</p>
+                      <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                        Last used: {patStatus.lastUsedAt ? new Date(patStatus.lastUsedAt).toLocaleString() : "Never"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Badge variant="default">
+                        Active
+                      </Badge>
+                      <Button variant="destructive" size="sm" onClick={() => { if (confirm("Revoke this token?")) revokePATMutation.mutate(); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Generated token display */}
+                {generatedToken && (
+                  <Alert>
+                    <AlertDescription className="space-y-2">
+                      <p className="font-semibold text-yellow-700 dark:text-yellow-400">⚠️ Save this token now — it won't be shown again!</p>
+                      <div className="flex gap-2">
+                        <Input value={generatedToken} readOnly className="font-mono text-xs" />
+                        <Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedToken)}><Copy className="h-4 w-4" /></Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Generate new token */}
+                <div className="space-y-3">
+                  <Label>Generate New Token</Label>
+                  <div className="flex gap-3 max-w-sm">
+                    <Input placeholder="Token name (e.g., Production API)" value={patName} onChange={(e) => setPatName(e.target.value)} />
+                    <Button onClick={() => generatePATMutation.mutate({ name: patName || "API Token" })} disabled={generatePATMutation.isPending}>
+                      {generatePATMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
-              )}
 
-              {/* Generated token display */}
-              {generatedToken && (
-                <Alert>
-                  <AlertDescription className="space-y-2">
-                    <p className="font-semibold text-yellow-700 dark:text-yellow-400">⚠️ Save this token now — it won't be shown again!</p>
-                    <div className="flex gap-2">
-                      <Input value={generatedToken} readOnly className="font-mono text-xs" />
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedToken)}><Copy className="h-4 w-4" /></Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Generate new token */}
-              <div className="space-y-3">
-                <Label>Generate New Token</Label>
-                <div className="flex gap-3 max-w-sm">
-                  <Input placeholder="Token name (e.g., Production API)" value={patName} onChange={(e) => setPatName(e.target.value)} />
-                  <Button onClick={() => generatePATMutation.mutate({ name: patName || "API Token" })} disabled={generatePATMutation.isPending}>
-                    {generatePATMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </Button>
+                {/* Usage instructions */}
+                <div className="p-4 bg-muted/40 rounded-xl space-y-2 border">
+                  <p className="text-sm font-semibold">How to use your PAT</p>
+                  <code className="block text-xs bg-background p-3 rounded-lg border font-mono">Authorization: Bearer YOUR_TOKEN_HERE</code>
+                  <p className="text-xs text-muted-foreground">Include this header in API requests to authenticate with service mode endpoints.</p>
                 </div>
-              </div>
-
-              {/* Usage instructions */}
-              <div className="p-4 bg-muted/40 rounded-xl space-y-2 border">
-                <p className="text-sm font-semibold">How to use your PAT</p>
-                <code className="block text-xs bg-background p-3 rounded-lg border font-mono">Authorization: Bearer YOUR_TOKEN_HERE</code>
-                <p className="text-xs text-muted-foreground">Include this header in API requests to authenticate with service mode endpoints.</p>
               </div>
             </CardContent>
           </Card>
@@ -311,158 +333,74 @@ export default function SettingsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2"><FileCode className="h-5 w-5" />Service Forms</CardTitle>
-                  <CardDescription>Forms created via API in service mode. Requires an active PAT.</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {/* Generate State Token dialog */}
-                  <Dialog open={showStateGenerator} onOpenChange={setShowStateGenerator}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm"><Clock className="h-4 w-4 mr-2" />State Token</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-lg">
-                      <DialogHeader>
-                        <DialogTitle>Generate Form State Token</DialogTitle>
-                        <DialogDescription>Create a one-time token for an external user to access a service form</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Form *</Label>
-                          <Select value={stateData.eventId} onValueChange={(v) => setStateData({ ...stateData, eventId: v })}>
-                            <SelectTrigger><SelectValue placeholder="Select a service form" /></SelectTrigger>
-                            <SelectContent>
-                              {serviceForms?.forms?.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>External User ID *</Label>
-                          <Input placeholder="user@example.com or user-123" value={stateData.externalUserId} onChange={(e) => setStateData({ ...stateData, externalUserId: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Metadata (JSON)</Label>
-                          <Textarea placeholder='{"customField": "value"}' value={stateData.metadata} onChange={(e) => setStateData({ ...stateData, metadata: e.target.value })} rows={3} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Expires In (seconds)</Label>
-                          <Input type="number" min={60} max={3600} value={stateData.expiresIn} onChange={(e) => setStateData({ ...stateData, expiresIn: parseInt(e.target.value) })} />
-                        </div>
-                        {generatedState && (
-                          <Alert>
-                            <AlertDescription className="space-y-3">
-                              <div>
-                                <p className="font-medium mb-1 text-sm">State Token</p>
-                                <div className="flex gap-2"><Input value={generatedState.stateToken} readOnly className="font-mono text-xs" /><Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedState.stateToken)}><Copy className="h-4 w-4" /></Button></div>
-                              </div>
-                              <div>
-                                <p className="font-medium mb-1 text-sm">Form URL</p>
-                                <div className="flex gap-2"><Input value={generatedState.formUrl} readOnly className="font-mono text-xs" /><Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedState.formUrl)}><Copy className="h-4 w-4" /></Button></div>
-                              </div>
-                              <p className="text-xs text-muted-foreground" suppressHydrationWarning>Expires: {new Date(generatedState.expiresAt).toLocaleString()}</p>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                        <Button onClick={handleGenerateFormState} disabled={!stateData.eventId || !stateData.externalUserId || createFormStateMutation.isPending} className="w-full">
-                          {createFormStateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock className="h-4 w-4 mr-2" />}Generate Token
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* Create Service Form dialog */}
-                  <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-                    <DialogTrigger asChild>
-                      <Button size="sm"><Plus className="h-4 w-4 mr-2" />Create Form</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Create Service Form</DialogTitle>
-                        <DialogDescription>Create a form accessible via API in service mode</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2"><Label>Title *</Label><Input placeholder="Customer Feedback Form" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} /></div>
-                        <div className="space-y-2"><Label>Description</Label><Textarea placeholder="Describe your form..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} /></div>
-                        <div className="space-y-2">
-                          <Label>Type *</Label>
-                          <Select value={formData.type} onValueChange={(v: "form" | "poll") => setFormData({ ...formData, type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent><SelectItem value="form">Form</SelectItem><SelectItem value="poll">Poll</SelectItem></SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2"><Label>Redirect URL *</Label><Input type="url" placeholder="https://example.com/thank-you" value={formData.redirectUrl} onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })} /></div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <Label>Hidden Fields * (min 1)</Label>
-                            <Button type="button" variant="outline" size="sm" onClick={addHiddenField}><Plus className="h-4 w-4 mr-1" />Add</Button>
-                          </div>
-                          {formData.hiddenFields.map((field, i) => (
-                            <div key={i} className="flex gap-2 items-start p-3 border rounded-lg bg-muted/20">
-                              <div className="flex-1 space-y-2">
-                                <Input placeholder="Field key (e.g. userId)" value={field.key} onChange={(e) => updateHiddenField(i, { key: e.target.value })} />
-                                <div className="flex gap-2">
-                                  <Select value={field.type} onValueChange={(v: "string" | "number" | "boolean") => updateHiddenField(i, { type: v })}>
-                                    <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                                    <SelectContent><SelectItem value="string">String</SelectItem><SelectItem value="number">Number</SelectItem><SelectItem value="boolean">Boolean</SelectItem></SelectContent>
-                                  </Select>
-                                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <input type="checkbox" checked={field.required} onChange={(e) => updateHiddenField(i, { required: e.target.checked })} className="rounded" />Required
-                                  </label>
-                                </div>
-                              </div>
-                              <Button type="button" variant="ghost" size="sm" onClick={() => removeHiddenField(i)} disabled={formData.hiddenFields.length === 1}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </div>
-                          ))}
-                        </div>
-                        <Button onClick={handleCreateServiceForm} disabled={!formData.title || !formData.redirectUrl || createServiceFormMutation.isPending} className="w-full">
-                          {createServiceFormMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}Create Service Form
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <CardDescription>Forms created via API in service mode. Requires Premium plan.</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {!patStatus || !patStatus.hasActivePAT ? (
-                <div className="text-center py-12 space-y-3">
-                  <Key className="h-12 w-12 mx-auto text-muted-foreground/40" />
-                  <p className="font-medium text-muted-foreground">Active API key required</p>
-                  <p className="text-sm text-muted-foreground">Go to the <strong>API Keys</strong> tab to generate a Personal Access Token first.</p>
-                </div>
-              ) : serviceForms?.forms?.length ? (
-                <div className="space-y-3">
-                  {serviceForms.forms.map((form: any) => (
-                    <div key={form.id} className="flex justify-between items-start p-4 border rounded-xl hover:bg-accent/50 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold">{form.title}</p>
-                          <Badge variant="outline">{form.type}</Badge>
-                          <Badge variant="secondary" className="text-xs">service</Badge>
-                        </div>
-                        {form.description && <p className="text-sm text-muted-foreground mb-2">{form.description}</p>}
-                        <div className="flex gap-1 items-center text-xs text-muted-foreground">
-                          <ExternalLink className="h-3 w-3" /><span className="truncate max-w-xs">{form.redirectUrl}</span>
-                        </div>
-                        {form.hiddenFields?.length > 0 && (
-                          <div className="flex gap-1 mt-2 flex-wrap">
-                            {form.hiddenFields.map((f: any, i: number) => (
-                              <Badge key={i} variant="secondary" className="text-xs">{f.key} ({f.type}){f.required && " *"}</Badge>
-                            ))}
+              {/* Premium Required Notice */}
+              <Alert className="border-primary/30 bg-primary/5">
+                <Lock className="h-4 w-4 text-primary" />
+                <AlertDescription className="space-y-3">
+                  <div>
+                    <p className="font-semibold text-foreground">Premium Feature</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Service Forms allow you to integrate Que forms into your applications via API. This feature requires an active Premium plan and Personal Access Token.
+                    </p>
+                  </div>
+                  <Button asChild variant="default" size="sm">
+                    <a href="/upgrade">
+                      <Zap className="h-4 w-4 mr-2" />
+                      View Premium Plans
+                    </a>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+
+              {/* Locked Service Forms Section */}
+              <div className="opacity-50 pointer-events-none mt-6">
+                {!patStatus || !patStatus.hasActivePAT ? (
+                  <div className="text-center py-12 space-y-3">
+                    <Key className="h-12 w-12 mx-auto text-muted-foreground/40" />
+                    <p className="font-medium text-muted-foreground">Active API key required</p>
+                    <p className="text-sm text-muted-foreground">Go to the <strong>API Keys</strong> tab to generate a Personal Access Token first.</p>
+                  </div>
+                ) : serviceForms?.forms?.length ? (
+                  <div className="space-y-3">
+                    {serviceForms.forms.map((form: any) => (
+                      <div key={form.id} className="flex justify-between items-start p-4 border rounded-xl hover:bg-accent/50 transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold">{form.title}</p>
+                            <Badge variant="outline">{form.type}</Badge>
+                            <Badge variant="secondary" className="text-xs">service</Badge>
                           </div>
-                        )}
+                          {form.description && <p className="text-sm text-muted-foreground mb-2">{form.description}</p>}
+                          <div className="flex gap-1 items-center text-xs text-muted-foreground">
+                            <ExternalLink className="h-3 w-3" /><span className="truncate max-w-xs">{form.redirectUrl}</span>
+                          </div>
+                          {form.hiddenFields?.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {form.hiddenFields.map((f: any, i: number) => (
+                                <Badge key={i} variant="secondary" className="text-xs">{f.key} ({f.type}){f.required && " *"}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete this service form?")) deleteServiceFormMutation.mutate({ id: form.id }); }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete this service form?")) deleteServiceFormMutation.mutate({ id: form.id }); }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 space-y-3">
-                  <FileCode className="h-12 w-12 mx-auto text-muted-foreground/40" />
-                  <p className="font-medium text-muted-foreground">No service forms yet</p>
-                  <p className="text-sm text-muted-foreground">Create your first service form using the button above</p>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 space-y-3">
+                    <FileCode className="h-12 w-12 mx-auto text-muted-foreground/40" />
+                    <p className="font-medium text-muted-foreground">No service forms yet</p>
+                    <p className="text-sm text-muted-foreground">Create your first service form using the button above</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

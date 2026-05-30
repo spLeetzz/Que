@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 				</SidebarFooter>
 			</Sidebar>
 
-			<SidebarInset className="bg-transparent relative">
+			<SidebarInset className="relative bg-background">
 				<BackgroundImage type="picsum" />
 				<header className="flex h-14 items-center justify-between gap-4 border-b border-border/45 px-6 bg-background/80 backdrop-blur-md sticky top-0 z-50 relative">
 					<div className="flex items-center gap-3">
@@ -172,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						{/* Extra header utilities */}
 					</div>
 				</header>
-				<main className="flex flex-1 flex-col gap-6 p-6 md:p-8 max-w-7xl w-full mx-auto relative z-10">
+				<main className="flex flex-1 flex-col gap-6 p-6 md:p-8 max-w-7xl w-full mx-auto relative z-10 min-h-screen">
 					{children}
 				</main>
 			</SidebarInset>
