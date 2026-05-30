@@ -1,6 +1,6 @@
 import { router, publicProcedure } from "../../trpc";
 import { TRPCError } from "@trpc/server";
-import { getAnalyticsSchema, exportAnalyticsSchema } from "./analytics.schema";
+import { getAnalyticsSchema, getIndividualResponsesSchema, exportAnalyticsSchema } from "./analytics.schema";
 import {
 	getOverviewMetrics,
 	getResponseTimeline,
@@ -8,6 +8,7 @@ import {
 	getQuestionAnalytics,
 	getParticipantJourneys,
 	getFullAnalytics,
+	getIndividualResponses,
 } from "./analytics.service";
 
 function requireUser(ctx: any) {
@@ -41,6 +42,11 @@ export const analyticsRouter = router({
 	getParticipantJourneys: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {
 		const user = requireUser(ctx);
 		return getParticipantJourneys(input.eventId, user.id);
+	}),
+
+	getIndividualResponses: publicProcedure.input(getIndividualResponsesSchema).query(async ({ input, ctx }) => {
+		const user = requireUser(ctx);
+		return getIndividualResponses(input.eventId, user.id, input.page, input.pageSize);
 	}),
 
 	getFullAnalytics: publicProcedure.input(getAnalyticsSchema).query(async ({ input, ctx }) => {

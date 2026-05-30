@@ -85,7 +85,7 @@ export async function createEvent(data: CreateEventInput, creator: User) {
 				...rest,
 				creatorId: creator.id,
 				slug: slug ?? null,
-				status: "draft",
+				status: data.type === "banter" ? "published" : "draft", // Banter is published immediately, others start as draft
 				receiveEmails,
 			})
 			.returning();
@@ -126,8 +126,17 @@ export async function getEventByIdOrSlug(identifier: string, requesterId: string
 	}
 
 	// Draft events are only visible to their creator
-	if (event.status === "draft" && event.creatorId !== requesterId) {
-		throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+	// Allow viewing if: not draft, OR is creator
+	if (event.status === "draft") {
+		if (!requesterId || event.creatorId !== requesterId) {
+			console.log("[getEventByIdOrSlug] Draft event access denied:", {
+				eventId: event.id,
+				eventCreatorId: event.creatorId,
+				requesterId,
+				match: event.creatorId === requesterId
+			});
+			throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+		}
 	}
 
 	return event;
@@ -155,6 +164,7 @@ export async function listUserEvents(
 				status: events.status,
 				visibility: events.visibility,
 				resultVisibility: events.resultVisibility,
+				mode: events.mode,
 				title: events.title,
 				description: events.description,
 				slug: events.slug,
@@ -211,6 +221,7 @@ export async function listPublicEvents(filters: {
 				status: events.status,
 				visibility: events.visibility,
 				resultVisibility: events.resultVisibility,
+				mode: events.mode,
 				title: events.title,
 				description: events.description,
 				slug: events.slug,
@@ -375,6 +386,7 @@ export async function duplicateEvent(eventId: string, newCreator: User) {
 				description: original.description,
 				visibility: original.visibility,
 				resultVisibility: original.resultVisibility,
+				mode: original.mode,
 				authRequired: original.authRequired,
 				multipleResponses: original.multipleResponses,
 				receiveEmails: original.receiveEmails,

@@ -19,6 +19,7 @@ export function useCreateEvent() {
 					status: "draft" as const,
 					visibility: newEvent.visibility ?? "public",
 					resultVisibility: newEvent.resultVisibility ?? "all",
+					mode: "standard" as const,
 					title: newEvent.title,
 					description: newEvent.description ?? null,
 					slug: newEvent.slug ?? null,

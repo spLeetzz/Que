@@ -55,6 +55,18 @@ export function useParticipantJourneys(eventId: string) {
 	);
 }
 
+export function useIndividualResponses(eventId: string, page: number = 1, pageSize: number = 50) {
+	return trpc.analytics.getIndividualResponses.useQuery(
+		{ eventId, page, pageSize },
+		{
+			enabled: !!eventId,
+			staleTime: 30 * 1000,
+			refetchOnWindowFocus: true,
+			placeholderData: (prev) => prev, // Smooth pagination
+		}
+	);
+}
+
 export function useFullAnalytics(eventId: string) {
 	return trpc.analytics.getFullAnalytics.useQuery(
 		{ eventId },

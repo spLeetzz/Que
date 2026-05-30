@@ -37,10 +37,11 @@ export interface QuestionAnalyticsItem {
 interface QuestionAnalyticsProps {
 	data: QuestionAnalyticsItem[] | undefined;
 	isLoading: boolean;
+	viewMode?: "summary" | "detailed";
 }
 
-function QuestionCard({ question }: { question: QuestionAnalyticsItem }) {
-	const [isExpanded, setIsExpanded] = useState(false);
+function QuestionCard({ question, defaultExpanded }: { question: QuestionAnalyticsItem; defaultExpanded?: boolean }) {
+	const [isExpanded, setIsExpanded] = useState(defaultExpanded || false);
 	const isHighAbandonment = question.abandonmentRate > 0.15;
 	const isHighSkip = question.skipRate > 0.2;
 
@@ -220,7 +221,7 @@ function QuestionCard({ question }: { question: QuestionAnalyticsItem }) {
 	);
 }
 
-export function QuestionAnalytics({ data, isLoading }: QuestionAnalyticsProps) {
+export function QuestionAnalytics({ data, isLoading, viewMode = "detailed" }: QuestionAnalyticsProps) {
 	if (isLoading) {
 		return (
 			<div className="space-y-4">
@@ -250,17 +251,22 @@ export function QuestionAnalytics({ data, isLoading }: QuestionAnalyticsProps) {
 		);
 	}
 
+	const defaultExpanded = viewMode === "summary";
+
 	return (
 		<div className="space-y-4">
 			<div>
 				<h3 className="text-lg font-semibold">Question Analytics</h3>
 				<p className="text-sm text-muted-foreground">
-					Detailed breakdown for each question ({data.length} questions)
+					{viewMode === "summary" 
+						? `Aggregated statistics for each question (${data.length} questions)`
+						: `Detailed breakdown for each question (${data.length} questions)`
+					}
 				</p>
 			</div>
 			<div className="space-y-4">
 				{data.map((question) => (
-					<QuestionCard key={question.itemId} question={question} />
+					<QuestionCard key={question.itemId} question={question} defaultExpanded={defaultExpanded} />
 				))}
 			</div>
 		</div>

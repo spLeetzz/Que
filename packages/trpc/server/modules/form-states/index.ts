@@ -41,7 +41,7 @@ export const formStatesRouter = router({
 			return createFormState(input, ctx.patUserId);
 		}),
 
-	validate: publicProcedure.input(validateStateSchema).output(stateValidationSchema).query(async ({ input }) => {
+	validate: publicProcedure.input(validateStateSchema).output(stateValidationSchema).mutation(async ({ input }) => {
 		return validateFormState(input);
 	}),
 });

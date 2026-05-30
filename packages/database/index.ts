@@ -21,3 +21,5 @@ export async function verifyDbConnection() {
 		client.release();
 	}
 }
+
+export * from "./schema";

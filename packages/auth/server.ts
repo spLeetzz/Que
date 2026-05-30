@@ -101,7 +101,7 @@ export const auth = betterAuth({
  * then cleans up the anonymous user record.
  *
  * Called after successful email verification. Uses a transaction to ensure
- * atomicity — either all events are migrated and the anonymous user is deleted,
+ * atomicity, either all events are migrated and the anonymous user is deleted,
  * or nothing changes.
  */
 async function migrateAnonymousUserData(

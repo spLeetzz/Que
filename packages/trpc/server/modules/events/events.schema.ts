@@ -6,6 +6,7 @@ export const eventTypeEnum = z.enum(["form", "poll", "banter"]);
 export const eventStatusEnum = z.enum(["draft", "published", "archived", "completed", "deleted"]);
 export const visibilityEnum = z.enum(["public", "private"]);
 export const resultVisibilityEnum = z.enum(["all", "creator_only"]);
+export const eventModeEnum = z.enum(["standard", "service"]);
 
 // Base event schema
 export const eventSchema = z.object({
@@ -15,6 +16,7 @@ export const eventSchema = z.object({
 	status: eventStatusEnum,
 	visibility: visibilityEnum,
 	resultVisibility: resultVisibilityEnum,
+	mode: eventModeEnum,
 	title: z.string(),
 	description: z.string().nullable(),
 	slug: z.string().nullable(),
@@ -45,6 +47,7 @@ export const createEventSchema = z.object({
 	slug: z.string().nullable().optional(),
 	visibility: visibilityEnum.default("public"),
 	resultVisibility: resultVisibilityEnum.default("all"),
+	mode: eventModeEnum.default("standard"),
 	authRequired: z.boolean().default(false),
 	multipleResponses: z.boolean().default(false),
 	receiveEmails: z.boolean().default(false),
@@ -77,6 +80,7 @@ export const updateEventSchema = z.object({
 		slug: z.string().nullable().optional(),
 		visibility: visibilityEnum.optional(),
 		resultVisibility: resultVisibilityEnum.optional(),
+		mode: eventModeEnum.optional(),
 		authRequired: z.boolean().optional(),
 		multipleResponses: z.boolean().optional(),
 		receiveEmails: z.boolean().optional(),

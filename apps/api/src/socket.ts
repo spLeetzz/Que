@@ -9,8 +9,8 @@ import { logger } from "@repo/logger";
 import { allowedOrigin } from "./index";
 
 export interface ClientToServerEvents {
-	"join:room": (payload: { eventId: string }) => void;
-	"status:update": (payload: { eventId: string; status: string }) => void;
+	"join:room": (payload: { eventId: string; participantId?: string }) => void;
+	"status:update": (payload: { eventId: string; status: string; participantId?: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -33,12 +33,14 @@ export interface ServerToClientEvents {
 		eventId: string;
 		onlineUsers: Array<{ userId: string; username: string; status: string }>;
 	}) => void;
+	"participant:joined": (payload: { participant: any }) => void;
 	error: (payload: { message: string }) => void;
 }
 
 export interface SocketData {
 	userId: string;
 	username: string;
+	participantId?: string;
 }
 
 export type IOServer = SocketIOServer<
@@ -110,7 +112,7 @@ export function setupSocket(server: HttpServer): IOServer {
 	io.on("connection", (socket) => {
 		const roomsJoined = new Set<string>();
 
-		socket.on("join:room", async ({ eventId }) => {
+		socket.on("join:room", async ({ eventId, participantId }) => {
 			try {
 				const [event] = await db
 					.select()
@@ -131,6 +133,11 @@ export function setupSocket(server: HttpServer): IOServer {
 
 				await socket.join(eventId);
 				roomsJoined.add(eventId);
+
+				// Store participantId in socket data if provided
+				if (participantId) {
+					socket.data.participantId = participantId;
+				}
 
 				// Update presence map
 				if (!presenceMap.has(eventId)) {
@@ -170,14 +177,16 @@ export function setupSocket(server: HttpServer): IOServer {
 			}
 		});
 
-		socket.on("status:update", ({ eventId, status }) => {
+		socket.on("status:update", ({ eventId, status, participantId }) => {
 			const eventPresence = presenceMap.get(eventId);
 			if (eventPresence) {
 				const userPresence = eventPresence.get(socket.data.userId);
 				if (userPresence) {
 					userPresence.status = status;
+					// Use participantId if provided, otherwise fall back to userId
+					const statusId = participantId || socket.data.participantId || socket.data.userId;
 					io.to(eventId).emit("participant:status_updated", {
-						participantId: socket.data.userId,
+						participantId: statusId,
 						status,
 					});
 					io.to(eventId).emit("room:presence", {
@@ -243,6 +252,13 @@ export function setupSocket(server: HttpServer): IOServer {
 		}
 	});
 
+	appEmitter.on("participant:joined", ({ eventId, participant }) => {
+		if (io) {
+			io.to(eventId).emit("participant:joined", { participant });
+			logger.debug(`Socket: Broadcast participant:joined in ${eventId}`);
+		}
+	});
+
 	appEmitter.on("response:created", async ({ eventId, responseId, participantId }) => {
 		if (!io) return;
 		try {
@@ -278,6 +294,6 @@ export function setupSocket(server: HttpServer): IOServer {
 }
 
 export function getIo(): IOServer {
-	if (!io) throw new Error("Socket.io not initialised — call setupSocket() first");
+	if (!io) throw new Error("Socket.io not initialised, call setupSocket() first");
 	return io;
 }

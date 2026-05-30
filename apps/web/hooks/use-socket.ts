@@ -14,6 +14,7 @@ export interface SocketUser {
 export interface UseSocketOptions {
 	enableFallback?: boolean;
 	fallbackInterval?: number;
+	participantId?: string | null;
 	onResponseNew?: (payload: any) => void;
 	onItemCreated?: (payload: any) => void;
 	onItemUpdated?: (payload: any) => void;
@@ -24,6 +25,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 	const {
 		enableFallback = true,
 		fallbackInterval = 4000,
+		participantId,
 		onResponseNew,
 		onItemCreated,
 		onItemUpdated,
@@ -40,10 +42,10 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 
 	// Function to update user's own status (typing, filling, idle)
 	const updateStatus = useCallback((status: string) => {
-		if (socketRef.current && isConnected) {
-			socketRef.current.emit("status:update", { eventId, status });
+		if (socketRef.current && isConnected && participantId) {
+			socketRef.current.emit("status:update", { eventId, status, participantId });
 		}
-	}, [eventId, isConnected]);
+	}, [eventId, isConnected, participantId]);
 
 	useEffect(() => {
 		if (!eventId) return;
@@ -81,7 +83,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			if (fallbackTimer) clearTimeout(fallbackTimer);
 			
 			// Join the room for this event
-			socket.emit("join:room", { eventId });
+			socket.emit("join:room", { eventId, participantId: participantId ?? undefined });
 
 			// Immediately invalidate/refetch current analytics and response queries
 			trpcUtils.analytics.getOverview.invalidate({ eventId });
@@ -149,6 +151,19 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			trpcUtils.analytics.getFullAnalytics.invalidate({ eventId });
 		});
 
+		socket.on("participant:joined", (payload: { participant: any }) => {
+			console.log("New participant joined live:", payload.participant);
+			trpcUtils.participants.listByEvent.invalidate({ eventId });
+			trpcUtils.events.getByIdOrSlug.invalidate({ identifier: eventId });
+			
+			trpcUtils.analytics.getOverview.invalidate({ eventId });
+			trpcUtils.analytics.getTimeline.invalidate({ eventId });
+			trpcUtils.analytics.getAbandonmentFunnel.invalidate({ eventId });
+			trpcUtils.analytics.getQuestionAnalytics.invalidate({ eventId });
+			trpcUtils.analytics.getParticipantJourneys.invalidate({ eventId });
+			trpcUtils.analytics.getFullAnalytics.invalidate({ eventId });
+		});
+
 		// Handle live chat / banter and item adjustments
 		socket.on("item:created", (payload: { item: any }) => {
 			console.log("New item added live:", payload.item);
@@ -197,7 +212,7 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			socket.disconnect();
 			socketRef.current = null;
 		};
-	}, [eventId, enableFallback, trpcUtils, onResponseNew, onItemCreated, onItemUpdated, onItemDeleted]);
+	}, [eventId, enableFallback, participantId, trpcUtils, onResponseNew, onItemCreated, onItemUpdated, onItemDeleted]);
 
 	// Return full reactive controls for developers building event pages
 	return {

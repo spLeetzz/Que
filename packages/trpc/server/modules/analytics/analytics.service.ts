@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { db } from "@repo/database";
 import { events, items, participants, responses, answers, user } from "@repo/database/schema";
-import { eq, and, isNull, ne, sql, desc, count as drizzleCount } from "drizzle-orm";
+import { eq, and, isNull, ne, sql, desc, count as drizzleCount, inArray } from "drizzle-orm";
 import type { User } from "../../shared/types";
 
 // ============================================================================
@@ -28,6 +28,123 @@ function validateEventCreator(eventCreatorId: string, userId: string): void {
 			code: "FORBIDDEN",
 			message: "You are not authorized to view analytics for this event",
 		});
+	}
+}
+
+/**
+ * Formats answer values based on question type for display in tables and exports.
+ * 
+ * @param rawValue - The raw answer value from the database (string array)
+ * @param questionType - The type of question (text, slider, options)
+ * @param metadata - Optional metadata containing question-specific configuration
+ * @returns Formatted string representation suitable for display
+ */
+export function formatAnswerValue(
+	rawValue: string[] | undefined | null,
+	questionType: "text" | "slider" | "options" | null,
+	metadata?: any
+): string {
+	// Handle null/undefined/empty values
+	if (!rawValue || rawValue.length === 0 || !questionType) {
+		return "";
+	}
+
+	try {
+		switch (questionType) {
+			case "text": {
+				// Text questions store answer as first element of array
+				const textValue = rawValue[0];
+				if (!textValue || textValue.trim() === "") {
+					return "";
+				}
+
+				// Check for text subtype in metadata for special formatting
+				const subtype = metadata?.subtype;
+				
+				if (subtype === "date") {
+					// Format date values (ISO string to readable format)
+					try {
+						const date = new Date(textValue);
+						if (!isNaN(date.getTime())) {
+							return date.toLocaleDateString("en-US", {
+								year: "numeric",
+								month: "short",
+								day: "numeric"
+							});
+						}
+					} catch {
+						// If date parsing fails, return as-is
+					}
+				} else if (subtype === "time") {
+					// Format time values
+					try {
+						const date = new Date(textValue);
+						if (!isNaN(date.getTime())) {
+							return date.toLocaleTimeString("en-US", {
+								hour: "2-digit",
+								minute: "2-digit"
+							});
+						}
+					} catch {
+						// If time parsing fails, return as-is
+					}
+				} else if (subtype === "number") {
+					// Format number values with up to 2 decimal places
+					const num = parseFloat(textValue);
+					if (!isNaN(num)) {
+						return num % 1 === 0 ? num.toString() : num.toFixed(2);
+					}
+				}
+
+				// For all other text types (short, long, email, url), return as-is
+				return textValue;
+			}
+
+			case "slider": {
+				// Slider questions store numeric value as string in first element
+				const sliderValue = rawValue[0];
+				if (!sliderValue) {
+					return "";
+				}
+
+				const num = parseFloat(sliderValue);
+				if (isNaN(num)) {
+					return "";
+				}
+
+				// Format with up to 2 decimal places, remove trailing zeros
+				return num % 1 === 0 ? num.toString() : num.toFixed(2).replace(/\.?0+$/, "");
+			}
+
+			case "options": {
+				// Options questions can have single or multiple selections
+				// Multiple selections are stored as multiple elements in the array
+				const selections = rawValue.filter(v => v && v.trim() !== "");
+				
+				if (selections.length === 0) {
+					return "";
+				}
+
+				// Check if multiple choice from metadata
+				const isMultiple = metadata?.multiple === true;
+
+				if (isMultiple) {
+					// Multiple choice: join with comma and space
+					return selections.join(", ");
+				} else {
+					// Single choice: return first selection
+					return selections[0] || "";
+				}
+			}
+
+			default:
+				// Unknown question type, return empty string
+				return "";
+		}
+	} catch (error) {
+		// Log error but don't throw - return empty string for malformed data
+		console.warn(`Error formatting answer value for question type ${questionType}:`, error);
+		return "";
 	}
 }
 
@@ -502,7 +619,7 @@ export async function getParticipantJourneys(
 				count: sql<number>`cast(count(distinct ${answers.itemId}) as int)`,
 			})
 			.from(answers)
-			.where(sql`${answers.responseId} = ANY(${responseData.map((r) => r.id)})`)
+			.where(inArray(answers.responseId, responseData.map((r) => r.id)))
 			.groupBy(answers.responseId);
 
 		const answerCountMap = new Map<string, number>();
@@ -558,7 +675,7 @@ export async function getParticipantJourneys(
 				value: items.value,
 			})
 			.from(items)
-			.where(sql`${items.id} = ANY(${itemIds})`);
+			.where(inArray(items.id, itemIds));
 
 		itemData.forEach((item) => {
 			itemTexts.set(item.id, item.value);
@@ -572,7 +689,7 @@ export async function getParticipantJourneys(
 			count: sql<number>`cast(count(distinct ${answers.itemId}) as int)`,
 		})
 		.from(answers)
-		.where(sql`${answers.participantId} = ANY(${participantData.map((p) => p.id)})`)
+		.where(inArray(answers.participantId, participantData.map((p) => p.id)))
 		.groupBy(answers.participantId);
 
 	const answerCountMap = new Map<string, number>();
@@ -611,6 +728,175 @@ export async function getParticipantJourneys(
 }
 
 // ============================================================================
+// Individual Responses
+// ============================================================================
+
+export interface QuestionMetadata {
+	itemId: string;
+	questionText: string;
+	questionType: "text" | "slider" | "options";
+	order: number;
+	metadata?: any;
+}
+
+export interface IndividualResponse {
+	responseId: string;
+	respondent: string;
+	submittedAt: Date;
+	answers: Record<string, string>; // itemId -> formatted answer value
+}
+
+export interface IndividualResponsesResult {
+	responses: IndividualResponse[];
+	questions: QuestionMetadata[];
+	pagination: {
+		page: number;
+		pageSize: number;
+		totalResponses: number;
+		totalPages: number;
+	};
+}
+
+export async function getIndividualResponses(
+	eventId: string,
+	userId: string,
+	page: number = 1,
+	pageSize: number = 50
+): Promise<IndividualResponsesResult> {
+	// Validate event and authorization
+	const event = await getEventOrThrow(eventId);
+	validateEventCreator(event.creatorId, userId);
+
+	// Get all questions for the event ordered by order field
+	const questions = await db
+		.select({
+			itemId: items.id,
+			questionText: items.value,
+			questionType: items.questionType,
+			order: items.order,
+			metadata: items.metadata,
+		})
+		.from(items)
+		.where(and(eq(items.eventId, eventId), eq(items.category, "question")))
+		.orderBy(items.order);
+
+	// Get total count of responses for pagination
+	const [countResult] = await db
+		.select({
+			total: sql<number>`cast(count(*) as int)`,
+		})
+		.from(responses)
+		.where(eq(responses.eventId, eventId));
+
+	const totalResponses = countResult?.total || 0;
+	const totalPages = Math.ceil(totalResponses / pageSize);
+	const offset = (page - 1) * pageSize;
+
+	// Get paginated responses with user email
+	const responseData = await db
+		.select({
+			id: responses.id,
+			submittedAt: responses.submittedAt,
+			email: user.email,
+		})
+		.from(responses)
+		.leftJoin(user, eq(responses.userId, user.id))
+		.where(eq(responses.eventId, eventId))
+		.orderBy(desc(responses.submittedAt))
+		.limit(pageSize)
+		.offset(offset);
+
+	if (responseData.length === 0) {
+		return {
+			responses: [],
+			questions: questions.map((q) => ({
+				itemId: q.itemId,
+				questionText: q.questionText,
+				questionType: q.questionType as "text" | "slider" | "options",
+				order: q.order,
+				metadata: q.metadata,
+			})),
+			pagination: {
+				page,
+				pageSize,
+				totalResponses,
+				totalPages,
+			},
+		};
+	}
+
+	// Batch fetch all answers for the paginated responses
+	const responseIds = responseData.map((r) => r.id);
+	const answerData = await db
+		.select({
+			responseId: answers.responseId,
+			itemId: answers.itemId,
+			value: answers.value,
+		})
+		.from(answers)
+		.where(inArray(answers.responseId, responseIds));
+
+	// Build answer map: responseId -> (itemId -> value)
+	const answerMap = new Map<string, Map<string, string[]>>();
+	answerData.forEach((answer) => {
+		if (!answerMap.has(answer.responseId)) {
+			answerMap.set(answer.responseId, new Map());
+		}
+		answerMap.get(answer.responseId)!.set(answer.itemId, answer.value);
+	});
+
+	// Build question metadata map for formatting
+	const questionMetadataMap = new Map<string, { type: "text" | "slider" | "options"; metadata?: any }>();
+	questions.forEach((q) => {
+		questionMetadataMap.set(q.itemId, {
+			type: q.questionType as "text" | "slider" | "options",
+			metadata: q.metadata,
+		});
+	});
+
+	// Transform into IndividualResponse objects
+	const individualResponses: IndividualResponse[] = responseData.map((r) => {
+		const responseAnswers = answerMap.get(r.id) || new Map();
+		const formattedAnswers: Record<string, string> = {};
+
+		// Format each answer using formatAnswerValue
+		questions.forEach((q) => {
+			const rawValue = responseAnswers.get(q.itemId);
+			const questionMeta = questionMetadataMap.get(q.itemId);
+			formattedAnswers[q.itemId] = formatAnswerValue(
+				rawValue,
+				questionMeta?.type || null,
+				questionMeta?.metadata
+			);
+		});
+
+		return {
+			responseId: r.id,
+			respondent: r.email || "Anonymous",
+			submittedAt: r.submittedAt,
+			answers: formattedAnswers,
+		};
+	});
+
+	return {
+		responses: individualResponses,
+		questions: questions.map((q) => ({
+			itemId: q.itemId,
+			questionText: q.questionText,
+			questionType: q.questionType as "text" | "slider" | "options",
+			order: q.order,
+			metadata: q.metadata,
+		})),
+		pagination: {
+			page,
+			pageSize,
+			totalResponses,
+			totalPages,
+		},
+	};
+}
+
+// ============================================================================
 // Full Analytics (Combined)
 // ============================================================================
 
@@ -626,6 +912,7 @@ export interface FullAnalytics {
 	abandonmentFunnel: AbandonmentFunnelStep[];
 	questions: QuestionAnalytics[];
 	participants: ParticipantJourney[];
+	individualResponses?: IndividualResponsesResult;
 }
 
 export async function getFullAnalytics(eventId: string, userId: string): Promise<FullAnalytics> {
@@ -640,6 +927,13 @@ export async function getFullAnalytics(eventId: string, userId: string): Promise
 		getParticipantJourneys(eventId, userId),
 	]);
 
+	// Include individual responses for forms and polls
+	let individualResponses: IndividualResponsesResult | undefined;
+	if (event.type === "form" || event.type === "poll") {
+		// Fetch all responses (up to 10000) for export functionality
+		individualResponses = await getIndividualResponses(eventId, userId, 1, 10000);
+	}
+
 	return {
 		event: {
 			id: event.id,
@@ -652,5 +946,6 @@ export async function getFullAnalytics(eventId: string, userId: string): Promise
 		abandonmentFunnel,
 		questions,
 		participants,
+		individualResponses,
 	};
 }

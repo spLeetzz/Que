@@ -114,7 +114,7 @@ export const eventStatusEnum = pgEnum("event_status", [
   "published",
   "archived",
   "completed",
-  "deleted", // soft delete
+  "deleted",
 ]);
 
 export const eventModeEnum = pgEnum("event_mode", ["standard", "service"]);
@@ -318,3 +318,11 @@ export const formStates = pgTable(
     index("form_states_external_user_idx").on(t.externalUserId),
   ],
 );
+
+import { type InferSelectModel } from "drizzle-orm";
+export type Event = InferSelectModel<typeof events>;
+export type Item = InferSelectModel<typeof items>;
+export type Participant = InferSelectModel<typeof participants>;
+export type Response = InferSelectModel<typeof responses>;
+export type Answer = InferSelectModel<typeof answers>;
+export type FormState = InferSelectModel<typeof formStates>;

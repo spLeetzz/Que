@@ -1,11 +1,17 @@
 import { trpc } from "~/trpc/client";
 
-export function useParticipants(eventId: string) {
+export function useParticipants(
+	eventId: string,
+	options?: { enablePolling?: boolean }
+) {
 	const query = trpc.participants.listByEvent.useQuery(
 		{ eventId },
 		{
 			enabled: !!eventId,
 			retry: 1,
+			staleTime: options?.enablePolling ? 0 : 5 * 60 * 1000,
+			refetchInterval: options?.enablePolling ? 3000 : false,
+			refetchIntervalInBackground: true,
 		}
 	);
 

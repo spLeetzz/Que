@@ -64,8 +64,33 @@ function toCSV(rows: Record<string, string | number | boolean | null | undefined
 	return [headerLine, ...dataLines].join("\n");
 }
 
+/**
+ * Format answer values for CSV export
+ */
+function formatAnswerForCSV(value: string | string[] | number | null | undefined): string {
+	// Handle null/undefined
+	if (value === null || value === undefined) {
+		return "";
+	}
+
+	// Handle arrays (multiple-choice)
+	if (Array.isArray(value)) {
+		return value.join(", ");
+	}
+
+	// Handle numbers
+	if (typeof value === "number") {
+		return value.toString();
+	}
+
+	// Handle strings
+	return String(value);
+}
+
 export function ExportMenu({ eventTitle, fullAnalytics }: ExportMenuProps) {
 	const safeTitle = eventTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+	const eventType = fullAnalytics?.event?.type;
+	const isForm = eventType === "form";
 
 	const exportResponsesCSV = () => {
 		try {
@@ -140,30 +165,32 @@ export function ExportMenu({ eventTitle, fullAnalytics }: ExportMenuProps) {
 
 	const exportIndividualResponsesCSV = () => {
 		try {
-			if (!fullAnalytics?.questions || !fullAnalytics?.participants) {
-				toast.error("No data to export");
+			if (!fullAnalytics?.individualResponses || !fullAnalytics?.individualResponses?.responses) {
+				toast.error("No individual response data to export");
 				return;
 			}
 
-			// Build a flat table: one row per response, columns = question texts
-			const questions = fullAnalytics.questions as any[];
-			const participantsList = fullAnalytics.participants as any[];
+			const { responses, questions } = fullAnalytics.individualResponses;
 
-			if (participantsList.length === 0) {
+			if (responses.length === 0) {
 				toast.error("No responses to export");
 				return;
 			}
 
-			// For now, export the available summary data per respondent
-			const data = participantsList.map((p: any) => {
-				const row: Record<string, string | number> = {
-					"Response ID": p.participantId || "",
-					Respondent: p.alias || "Anonymous",
-					"Submitted At": p.submittedAt ? new Date(p.submittedAt).toISOString() : "",
-					Completed: p.completed ? "Yes" : "No",
-					"Answered Questions": p.answeredQuestions ?? 0,
-					"Total Questions": p.totalQuestions ?? 0,
+			// Build CSV rows: one row per response with all question answers
+			const data = responses.map((response: any) => {
+				const row: Record<string, string> = {
+					"Response ID": response.responseId || "",
+					Respondent: response.respondent || "Anonymous",
+					"Submitted At": response.submittedAt ? new Date(response.submittedAt).toISOString() : "",
 				};
+
+				// Add each question's answer as a column
+				questions.forEach((question: any) => {
+					const answerValue = response.answers[question.itemId];
+					row[question.questionText] = formatAnswerForCSV(answerValue);
+				});
+
 				return row;
 			});
 
@@ -209,22 +236,24 @@ export function ExportMenu({ eventTitle, fullAnalytics }: ExportMenuProps) {
 			<DropdownMenuContent align="end" className="w-56">
 				<DropdownMenuLabel>Export Data</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={exportResponsesCSV}>
-					<FileTextIcon className="h-4 w-4" />
-					Responses CSV
-				</DropdownMenuItem>
+				{isForm && (
+					<DropdownMenuItem onClick={exportIndividualResponsesCSV}>
+						<FileTextIcon className="h-4 w-4" />
+						Individual Responses (CSV)
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuItem onClick={exportQuestionAnalyticsCSV}>
 					<FileTextIcon className="h-4 w-4" />
-					Question Analytics CSV
+					Question Analytics (CSV)
 				</DropdownMenuItem>
-				<DropdownMenuItem onClick={exportIndividualResponsesCSV}>
+				<DropdownMenuItem onClick={exportResponsesCSV}>
 					<FileTextIcon className="h-4 w-4" />
-					Individual Responses CSV
+					Response Summary (CSV)
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={exportFullJSON}>
 					<FileJsonIcon className="h-4 w-4" />
-					Full Analytics JSON
+					Full Analytics (JSON)
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

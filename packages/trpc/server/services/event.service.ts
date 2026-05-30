@@ -343,7 +343,7 @@ export async function deleteEvent(eventId: string, userId: string) {
 
 	validateCreator(event.creatorId, userId);
 
-	// Set slug to null — frees the unique value for reuse (Postgres allows multiple NULLs in unique index)
+	// Set slug to null, frees the unique value for reuse (Postgres allows multiple NULLs in unique index)
 	await db
 		.update(events)
 		.set({

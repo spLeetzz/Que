@@ -205,6 +205,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@repo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@repo/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
