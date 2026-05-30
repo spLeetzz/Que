@@ -61,7 +61,7 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4 bg-background relative">
+		<div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
 			<BackgroundImage type="picsum" />
 			<div className="w-full max-w-md space-y-8 relative z-10">
 				{/* Header */}

@@ -53,7 +53,7 @@ export function BackgroundImage({
 		<div
 			className={cn(
 				"absolute inset-0 -z-10 bg-cover bg-center pointer-events-none",
-				type === "picsum" ? "blur-[96px]" : "blur-[2px]",
+				type === "picsum" ? "opacity-40 blur-xl" : "opacity-15 blur-sm",
 				className
 			)}
 			style={{
@@ -61,6 +61,7 @@ export function BackgroundImage({
 				backgroundSize: "cover",
 				backgroundPosition: "center",
 				backgroundRepeat: "no-repeat",
+				backgroundAttachment: "fixed",
 			}}
 			key={key}
 		/>

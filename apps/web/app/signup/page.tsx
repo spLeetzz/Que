@@ -64,7 +64,7 @@ export default function SignUpPage() {
 
 	if (success) {
 		return (
-			<div className="min-h-screen flex items-center justify-center px-4 bg-background relative">
+			<div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
 				<BackgroundImage type="picsum" />
 				<div className="w-full max-w-md space-y-6 text-center relative z-10">
 					<div className="flex justify-center">
@@ -95,7 +95,7 @@ export default function SignUpPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4 bg-background relative">
+		<div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
 			<BackgroundImage type="picsum" />
 			<div className="w-full max-w-md space-y-8 relative z-10">
 				{/* Header */}
