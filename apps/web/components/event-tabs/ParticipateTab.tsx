@@ -142,7 +142,15 @@ export function ParticipateTab({
               questionItems.map((item) => (
                 <QuestionRenderer
                   key={item.id}
-                  item={item}
+                  item={{
+                    ...item,
+                    questionType: (item.questionType ?? null) as
+                      | "text"
+                      | "slider"
+                      | "options"
+                      | null,
+                    required: item.required ?? false,
+                  }}
                   answer={answers[item.id] ?? []}
                   onChange={(val) => onInputChange(item.id, val)}
                   error={formErrors[item.id]}
