@@ -66,20 +66,26 @@ export default function CreateEventPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-2xl py-8 px-4 space-y-6 animate-in fade-in duration-300">
-        {/* Back button */}
-        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group">
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-          Back to Dashboard
-        </Link>
-
         {/* Header */}
-        <div className="flex items-center gap-2.5">
-          <div className="size-9 rounded-xl bg-gradient-to-tr from-primary to-primary/70 flex items-center justify-center shadow-md shadow-primary/20">
-            <Sparkles className="size-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Create Event</h1>
-            <p className="text-xs text-muted-foreground">Quick setup in one screen</p>
+        <div className="flex items-center gap-4">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.back()} 
+            className="rounded-full size-10 hover:bg-secondary shrink-0 text-muted-foreground hover:text-foreground"
+            title="Go back"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-gradient-to-tr from-primary to-primary/70 flex items-center justify-center shadow-md shadow-primary/20">
+              <Sparkles className="size-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight">Create Event</h1>
+              <p className="text-xs text-muted-foreground">Quick setup in one screen</p>
+            </div>
           </div>
         </div>
 
@@ -209,11 +215,9 @@ export default function CreateEventPage() {
               {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {createMutation.isPending ? "Creating…" : "Create & Continue"}
             </Button>
-            <Link href="/dashboard">
-              <Button type="button" variant="outline" className="h-11 px-6 rounded-xl font-semibold border-border/60">
-                Cancel
-              </Button>
-            </Link>
+            <Button type="button" onClick={() => router.back()} variant="outline" className="h-11 px-6 rounded-xl font-semibold border-border/60">
+              Cancel
+            </Button>
           </div>
         </form>
       </div>

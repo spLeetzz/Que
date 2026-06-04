@@ -18,6 +18,9 @@ export const auth = betterAuth({
 
   advanced: {
     useSecureCookies: env.NODE_ENV === "production", // secure cookies in production but allow normal in dev
+    ipAddress: {
+      ipAddressHeaders: ["x-real-ip", "x-forwarded-for"], // mostly it would be behind nginx, for this case it was
+    },
   },
 
   emailVerification: {
@@ -27,7 +30,8 @@ export const auth = betterAuth({
       const token = parsedUrl.searchParams.get("token");
       const clientUrl = `${env.WEB_URL}/verify-email?token=${token}`;
 
-      void sendEmail({ //resend suggests not awaiting it
+      void sendEmail({
+        //resend suggests not awaiting it
         apiKey: env.RESEND_API_KEY,
         to: user.email,
         subject: "Verify your email address",
@@ -82,14 +86,11 @@ export const auth = betterAuth({
             .set({ linkedAnonymousId: anonymousUser.user.id })
             .where(eq(authSchema.user.id, newUser.user.id));
         } catch (error) {
-          logger.error(
-            "Failed to store anonymous user link during account linking",
-            {
-              anonymousUserId: anonymousUser.user.id,
-              newUserId: newUser.user.id,
-              error,
-            },
-          );
+          logger.error("Failed to store anonymous user link during account linking", {
+            anonymousUserId: anonymousUser.user.id,
+            newUserId: newUser.user.id,
+            error,
+          });
         }
       },
     }),
@@ -104,9 +105,7 @@ export const auth = betterAuth({
  * atomicity, either all events are migrated and the anonymous user is deleted,
  * or nothing changes.
  */
-async function migrateAnonymousUserData(
-  verifiedUserId: string,
-): Promise<void> {
+async function migrateAnonymousUserData(verifiedUserId: string): Promise<void> {
   const [record] = await db
     .select({ linkedAnonymousId: authSchema.user.linkedAnonymousId })
     .from(authSchema.user)
@@ -156,19 +155,14 @@ async function migrateAnonymousUserData(
         .where(eq(authSchema.user.id, verifiedUserId));
 
       // 4. Delete the anonymous user (cascades sessions + accounts via FK)
-      await tx
-        .delete(authSchema.user)
-        .where(eq(authSchema.user.id, anonymousUserId));
+      await tx.delete(authSchema.user).where(eq(authSchema.user.id, anonymousUserId));
     });
   } catch (error) {
-    logger.error(
-      "Failed to migrate anonymous user data after email verification",
-      {
-        anonymousUserId,
-        verifiedUserId,
-        error,
-      },
-    );
+    logger.error("Failed to migrate anonymous user data after email verification", {
+      anonymousUserId,
+      verifiedUserId,
+      error,
+    });
   }
 }
 

@@ -118,19 +118,21 @@ export function SettingsTab({ event, eventId }: SettingsTabProps) {
         {/* Lifecycle Card */}
         <Card className="shadow-xl border-border bg-card/90 backdrop-blur-md rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-border/40 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/8 text-primary">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/8 text-primary shrink-0">
                   <Zap className="h-4 w-4" />
                 </div>
-                <div>
-                  <CardTitle className="text-base font-bold">Event Lifecycle</CardTitle>
-                  <CardDescription className="text-xs mt-0.5">
+                <div className="min-w-0">
+                  <CardTitle className="text-base font-bold truncate">Event Lifecycle</CardTitle>
+                  <CardDescription className="text-xs mt-0.5 line-clamp-1 sm:line-clamp-none">
                     Control the status and state of your event
                   </CardDescription>
                 </div>
               </div>
-              {getStatusBadge()}
+              <div className="flex justify-start sm:justify-end shrink-0 pl-11 sm:pl-0">
+                {getStatusBadge()}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-5 space-y-2.5">

@@ -8,6 +8,7 @@ import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, CheckCircle, X, BarChart3 } from "lucide-react";
 import { cn } from "~/lib/utils";
@@ -22,6 +23,7 @@ interface PollsTabProps {
 export function PollsTab({ eventId, items, participantId, isCreator = false }: PollsTabProps) {
   const utils = trpc.useUtils();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [pollType, setPollType] = useState<"options" | "text">("options");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
@@ -68,24 +70,39 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
       return;
     }
 
-    const validOptions = pollOptions.filter((opt) => opt.trim());
-    if (validOptions.length < 2) {
-      toast.error("Please provide at least 2 options");
-      return;
-    }
+    if (pollType === "options") {
+      const validOptions = pollOptions.filter((opt) => opt.trim());
+      if (validOptions.length < 2) {
+        toast.error("Please provide at least 2 options");
+        return;
+      }
 
-    createItemMutation.mutate({
-      eventId,
-      category: "question",
-      value: pollQuestion.trim(),
-      questionType: "options",
-      required: false,
-      participantId: participantId ?? undefined,
-      metadata: {
-        inputType: "radio",
-        choices: validOptions.map((opt) => opt.trim()),
-      },
-    });
+      createItemMutation.mutate({
+        eventId,
+        category: "question",
+        value: pollQuestion.trim(),
+        questionType: "options",
+        required: false,
+        participantId: participantId ?? undefined,
+        metadata: {
+          inputType: "radio",
+          choices: validOptions.map((opt) => opt.trim()),
+        },
+      });
+    } else {
+      createItemMutation.mutate({
+        eventId,
+        category: "question",
+        value: pollQuestion.trim(),
+        questionType: "text",
+        required: false,
+        participantId: participantId ?? undefined,
+        metadata: {
+          subtype: "short",
+          inputType: "short",
+        },
+      });
+    }
   };
 
   const handleVote = async (itemId: string, optionText: string) => {
@@ -165,6 +182,18 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label>Poll Type</Label>
+                <Select value={pollType} onValueChange={(val: any) => setPollType(val)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="options">Multiple Choice</SelectItem>
+                    <SelectItem value="text">Open Ended (Text)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Poll Question</Label>
                 <Input
                   placeholder="e.g. Who's winning the match tonight?"
@@ -173,6 +202,7 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
                   maxLength={200}
                 />
               </div>
+              {pollType === "options" && (
               <div className="space-y-2">
                 <Label>Options</Label>
                 <div className="space-y-2">
@@ -208,6 +238,7 @@ export function PollsTab({ eventId, items, participantId, isCreator = false }: P
                   </Button>
                 )}
               </div>
+              )}
               <Button
                 onClick={handleCreatePoll}
                 disabled={createItemMutation.isPending}
@@ -270,6 +301,9 @@ function PollCard({
   handleVote,
   initialUserVote,
 }: PollCardProps) {
+  const isText = poll.questionType === "text";
+  const [textAnswer, setTextAnswer] = useState("");
+  
   const metadata = poll.metadata as { choices?: string[] } | null;
   const choices = metadata?.choices || [];
   
@@ -308,6 +342,11 @@ function PollCard({
 
     return { counts, total };
   }, [answers, choices]);
+
+  const handleTextVote = () => {
+    if (!textAnswer.trim()) return;
+    handleVote(poll.id, textAnswer.trim());
+  };
 
   return (
     <Card className="shadow-lg border-border hover:shadow-xl transition-all duration-300 bg-card/65 backdrop-blur-md relative overflow-hidden group">
@@ -350,67 +389,107 @@ function PollCard({
       
       <CardContent className="space-y-3 pl-6 pr-6 pb-6">
         <div className="space-y-2">
-          {choices.map((choice) => {
-            const isSelected = myVote === choice;
-            const voteCount = results.counts[choice] || 0;
-            const pct = results.total > 0 ? Math.round((voteCount / results.total) * 100) : 0;
-            
-            return (
-              <button
-                key={choice}
-                type="button"
-                onClick={() => handleVote(poll.id, choice)}
-                disabled={!!myVote}
-                className={cn(
-                  "w-full text-left rounded-xl p-3 border-2 transition-all relative overflow-hidden flex items-center justify-between group/btn",
-                  isSelected
-                    ? "border-primary bg-primary/5 shadow-sm font-semibold"
-                    : "border-muted/60 bg-background/40 hover:border-muted-foreground/30 hover:bg-muted/10",
-                  myVote && !isSelected && "opacity-75"
-                )}
-              >
-                {/* Background sliding percentage bar for voted state */}
-                {myVote && (
-                  <div
-                    className={cn(
-                      "absolute inset-y-0 left-0 -z-10 transition-all duration-700 ease-out",
-                      isSelected ? "bg-primary/10" : "bg-muted/40"
-                    )}
-                    style={{ width: `${pct}%` }}
-                  />
-                )}
-
-                <div className="flex items-center gap-3 z-10">
-                  <div
-                    className={cn(
-                      "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all",
-                      isSelected
-                        ? "border-primary bg-primary"
-                        : "border-muted-foreground"
-                    )}
-                  >
-                    {isSelected && (
-                      <CheckCircle className="h-3 w-3 text-white" />
-                    )}
-                  </div>
-                  <span className="text-sm">{choice}</span>
+          {isText ? (
+            <div className="space-y-3">
+              {myVote ? (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Your response:</p>
+                  <p className="text-sm font-medium">{myVote}</p>
                 </div>
-                
-                {/* Show results percentage if the user has voted */}
-                {myVote && (
-                  <div className="flex items-center gap-2 z-10 text-xs font-semibold">
-                    <span className="text-muted-foreground">({voteCount})</span>
-                    <span className="text-foreground">{pct}%</span>
+              ) : (
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Type your answer..." 
+                    value={textAnswer}
+                    onChange={(e) => setTextAnswer(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleTextVote();
+                      }
+                    }}
+                  />
+                  <Button onClick={handleTextVote} disabled={!textAnswer.trim()}>Submit</Button>
+                </div>
+              )}
+              {answers && answers.length > 0 && (
+                <div className="mt-4 space-y-2 border-t border-border/50 pt-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Responses ({answers.length})</p>
+                  <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                    {answers.slice(0, 10).map((ans, i) => (
+                       ans.value[0] && (
+                         <div key={i} className="bg-muted/30 rounded-lg p-2.5 text-sm border border-border/30">
+                           {ans.value[0]}
+                         </div>
+                       )
+                    ))}
                   </div>
-                )}
-              </button>
-            );
-          })}
+                </div>
+              )}
+            </div>
+          ) : (
+            choices.map((choice) => {
+              const isSelected = myVote === choice;
+              const voteCount = results.counts[choice] || 0;
+              const pct = results.total > 0 ? Math.round((voteCount / results.total) * 100) : 0;
+              
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  onClick={() => handleVote(poll.id, choice)}
+                  disabled={!!myVote}
+                  className={cn(
+                    "w-full text-left rounded-xl p-3 border-2 transition-all relative overflow-hidden flex items-center justify-between group/btn",
+                    isSelected
+                      ? "border-primary bg-primary/5 shadow-sm font-semibold"
+                      : "border-muted/60 bg-background/40 hover:border-muted-foreground/30 hover:bg-muted/10",
+                    myVote && !isSelected && "opacity-75"
+                  )}
+                >
+                  {/* Background sliding percentage bar for voted state */}
+                  {myVote && (
+                    <div
+                      className={cn(
+                        "absolute inset-y-0 left-0 -z-10 transition-all duration-700 ease-out",
+                        isSelected ? "bg-primary/10" : "bg-muted/40"
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  )}
+
+                  <div className="flex items-center gap-3 z-10">
+                    <div
+                      className={cn(
+                        "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all",
+                        isSelected
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground"
+                      )}
+                    >
+                      {isSelected && (
+                        <CheckCircle className="h-3 w-3 text-white" />
+                      )}
+                    </div>
+                    <span className="text-sm">{choice}</span>
+                  </div>
+                  
+                  {/* Show results percentage if the user has voted */}
+                  {myVote && (
+                    <div className="flex items-center gap-2 z-10 text-xs font-semibold">
+                      <span className="text-muted-foreground">({voteCount})</span>
+                      <span className="text-foreground">{pct}%</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 pl-1">
-          <span>{results.total} {results.total === 1 ? "vote" : "votes"} overall</span>
-          {!myVote && <span className="italic">Click an option to cast your vote</span>}
+          <span>{isText ? (answers?.length || 0) : results.total} {((isText ? answers?.length : results.total) === 1) ? "response" : "responses"} overall</span>
+          {!myVote && <span className="italic">{isText ? "Submit your answer above" : "Click an option to cast your vote"}</span>}
         </div>
       </CardContent>
     </Card>

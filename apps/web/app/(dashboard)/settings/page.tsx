@@ -138,11 +138,11 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="gap-1.5"><User className="h-4 w-4" />Profile</TabsTrigger>
-          <TabsTrigger value="security" className="gap-1.5"><Lock className="h-4 w-4" />Security</TabsTrigger>
-          <TabsTrigger value="developer" className="gap-1.5"><Key className="h-4 w-4" />API Keys</TabsTrigger>
-          <TabsTrigger value="service-forms" className="gap-1.5"><Code2 className="h-4 w-4" />Service Forms</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto p-1 gap-1">
+          <TabsTrigger value="profile" className="gap-1.5 h-10"><User className="h-4 w-4 shrink-0" /><span className="truncate">Profile</span></TabsTrigger>
+          <TabsTrigger value="security" className="gap-1.5 h-10"><Lock className="h-4 w-4 shrink-0" /><span className="truncate">Security</span></TabsTrigger>
+          <TabsTrigger value="developer" className="gap-1.5 h-10"><Key className="h-4 w-4 shrink-0" /><span className="truncate">API Keys</span></TabsTrigger>
+          <TabsTrigger value="service-forms" className="gap-1.5 h-10"><Code2 className="h-4 w-4 shrink-0" /><span className="truncate">Service Forms</span></TabsTrigger>
         </TabsList>
 
         {/* ── PROFILE TAB ── */}
@@ -154,19 +154,37 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Avatar row */}
-              <div className="flex items-center gap-5">
-                <Avatar className="h-20 w-20 border-2 border-border shadow-sm">
-                  <AvatarImage src={user?.image ?? ""} alt={user?.name} />
-                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">{initials}</AvatarFallback>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                <Avatar className="h-20 w-20 border-2 border-border shadow-sm shrink-0">
+                  <AvatarImage src={user?.isAnonymous ? "" : (user?.image ?? "")} alt={user?.isAnonymous ? "Guest" : (user?.name || "")} />
+                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                    {user?.isAnonymous ? "G" : initials}
+                  </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-semibold text-lg">{user?.name || "No name set"}</p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {user?.emailVerified
-                      ? <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10"><CheckCircle className="h-3 w-3 mr-1" />Email verified</Badge>
-                      : <Badge variant="outline" className="text-yellow-600 border-yellow-500/30 bg-yellow-500/10"><AlertTriangle className="h-3 w-3 mr-1" />Email not verified</Badge>
-                    }
+                <div className="min-w-0">
+                  <p className="font-semibold text-lg truncate">
+                    {user?.isAnonymous ? "Guest Session" : (user?.name || "No name set")}
+                  </p>
+                  {!user?.isAnonymous && (
+                    <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    {user?.isAnonymous ? (
+                      <Badge variant="outline" className="text-blue-600 border-blue-500/30 bg-blue-500/10 shrink-0">
+                        <User className="h-3 w-3 mr-1" />
+                        Anonymous
+                      </Badge>
+                    ) : user?.emailVerified ? (
+                      <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10 shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Email verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-yellow-600 border-yellow-500/30 bg-yellow-500/10 shrink-0">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Email not verified
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -178,20 +196,23 @@ export default function SettingsPage() {
                 <Label htmlFor="display-name">Display Name</Label>
                 <Input
                   id="display-name"
-                  placeholder={user?.name || "Enter your name"}
+                  placeholder={user?.isAnonymous ? "Sign in to set a name" : (user?.name || "Enter your name")}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  disabled={user?.isAnonymous}
                 />
                 <p className="text-xs text-muted-foreground">This is how you appear across the platform</p>
               </div>
 
-              <div className="space-y-2 max-w-sm">
-                <Label>Email Address</Label>
-                <Input value={user?.email || ""} disabled className="bg-muted/40 cursor-not-allowed" />
-                <p className="text-xs text-muted-foreground">Email cannot be changed from here</p>
-              </div>
+              {!user?.isAnonymous && (
+                <div className="space-y-2 max-w-sm">
+                  <Label>Email Address</Label>
+                  <Input value={user?.email || ""} disabled className="bg-muted/40 cursor-not-allowed" />
+                  <p className="text-xs text-muted-foreground">Email cannot be changed from here</p>
+                </div>
+              )}
 
-              <Button onClick={handleSaveProfile} disabled={isSavingProfile || !displayName.trim()}>
+              <Button onClick={handleSaveProfile} disabled={isSavingProfile || !displayName.trim() || user?.isAnonymous}>
                 {isSavingProfile ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save Profile"}
               </Button>
             </CardContent>

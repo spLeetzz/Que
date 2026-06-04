@@ -142,7 +142,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
       const tabParam = searchParams.get("tab");
       const validTabs =
         event.type === "banter"
-          ? ["chat", "polls", "results", "manage", "settings"]
+          ? ["chat", "polls", "results", "settings"]
           : ["participate", "results", "manage", "settings"];
 
       if (tabParam && validTabs.includes(tabParam)) {
@@ -598,13 +598,6 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
                 {isCreator && (
                   <>
                     <TabsTrigger
-                      value="manage"
-                      className="flex-1 min-w-[80px] rounded-xl py-2.5 font-semibold text-xs tracking-wide cursor-pointer gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
-                    >
-                      <Settings2 className="h-3.5 w-3.5" />
-                      <span>Manage</span>
-                    </TabsTrigger>
-                    <TabsTrigger
                       value="settings"
                       className="flex-1 min-w-[80px] rounded-xl py-2.5 font-semibold text-xs tracking-wide cursor-pointer gap-2 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
                     >
@@ -696,13 +689,6 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
 
               {isCreator && (
                 <>
-                  <TabsContent
-                    value="manage"
-                    className="mt-0 outline-none animate-in fade-in-30 duration-300"
-                  >
-                    <ManageTab eventId={eventId} items={items ?? []} eventType={event.type} />
-                  </TabsContent>
-
                   <TabsContent
                     value="settings"
                     className="mt-0 outline-none animate-in fade-in-30 duration-300"

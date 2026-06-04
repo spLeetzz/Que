@@ -10,9 +10,18 @@ interface BackgroundImageProps {
 }
 
 function generateUrl(type: string, themeUrl?: string | null) {
-  if ((type === "theme" || type === "unsplash") && themeUrl) return themeUrl;
+  if ((type === "theme" || type === "unsplash") && themeUrl) {
+    // If it's an unsplash URL, try to optimize it by adding width/quality params if not present
+    if (themeUrl.includes("unsplash.com") && !themeUrl.includes("w=")) {
+      const separator = themeUrl.includes("?") ? "&" : "?";
+      return `${themeUrl}${separator}w=800&q=60`;
+    }
+    return themeUrl;
+  }
   const id = Math.floor(Math.random() * 1000);
-  return `https://picsum.photos/seed/${id}/1920/1080`;
+  // Use a much smaller image size (480x270 instead of 1920x1080)
+  // because it's going to be heavily blurred anyway (blur(40px))
+  return `https://picsum.photos/seed/${id}/480/270`;
 }
 
 export const BackgroundImage = memo(function BackgroundImage({
@@ -22,25 +31,28 @@ export const BackgroundImage = memo(function BackgroundImage({
   className,
 }: BackgroundImageProps) {
   const [loaded, setLoaded] = useState(false);
-  const [url] = useState(() => generateUrl(type, themeUrl));
+  const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    setUrl(generateUrl(type, themeUrl));
+  }, [type, themeUrl]);
+
+  useEffect(() => {
+    if (!url) return;
     const img = new Image();
     img.onload = () => setLoaded(true);
     img.src = url;
   }, [url]);
 
-  if (!loaded) return null;
-
   return (
     <div
       className={cn(
         "fixed inset-0 bg-cover bg-center pointer-events-none transition-opacity duration-1000",
-        type === "picsum" ? "opacity-40" : "opacity-15",
+        loaded ? (type === "picsum" ? "opacity-40" : "opacity-15") : "opacity-0",
         className
       )}
       style={{
-        backgroundImage: `url(${url})`,
+        backgroundImage: url ? `url(${url})` : "none",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

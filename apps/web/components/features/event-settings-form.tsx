@@ -109,7 +109,7 @@ function RadioPill({
       disabled={disabled}
       onClick={() => onChange(value)}
       className={cn(
-        "relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+        "relative flex items-center justify-center sm:justify-start gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
         selected
           ? "bg-primary/10 border-primary/40 text-foreground"
           : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
@@ -360,7 +360,7 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
             control={form.control}
             name="visibility"
             render={({ field }) => (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                 <RadioPill
                   value="public"
                   current={field.value}
@@ -388,7 +388,7 @@ export function EventSettingsForm({ eventId }: EventSettingsFormProps) {
             control={form.control}
             name="resultVisibility"
             render={({ field }) => (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                 <RadioPill
                   value="all"
                   current={field.value}

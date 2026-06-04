@@ -105,11 +105,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <SidebarMenuButton
                         asChild
                         isActive={isActive}
-                        className={`relative rounded-xl px-3 py-2.5 transition-all duration-200 group ${
-                          isActive
-                            ? "bg-primary/10 text-primary font-semibold shadow-sm"
-                            : "hover:bg-secondary hover:text-foreground text-muted-foreground"
-                        }`}
+                        className={`relative rounded-xl px-3 py-2.5 transition-all duration-200 group ${isActive
+                          ? "bg-primary/10 text-primary font-semibold shadow-sm"
+                          : "hover:bg-secondary hover:text-foreground text-muted-foreground"
+                          }`}
                       >
                         <Link href={item.href} className="flex items-center gap-3">
                           {mounted ? (
@@ -143,18 +142,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="w-full justify-start gap-3 px-3 h-auto py-2 rounded-xl hover:bg-secondary border border-transparent hover:border-border/30 transition-all duration-300"
                   >
                     <Avatar className="size-8.5 border border-border shadow-sm">
-                      <AvatarImage src={user?.image ?? ""} alt={user?.name} />
+                      <AvatarImage src={user?.isAnonymous ? "" : (user?.image ?? "")} alt={user?.isAnonymous ? "Guest" : (user?.name || "")} />
                       <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
-                        {mounted ? initials : "U"}
+                        {mounted ? (user?.isAnonymous ? "G" : initials) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col items-start text-left min-w-0">
                       <span className="text-sm font-semibold truncate max-w-[130px] text-foreground">
-                        {mounted ? user?.name || "User" : "User"}
+                        {mounted ? (user?.isAnonymous ? "Guest" : (user?.name || "User")) : "User"}
                       </span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[130px] font-mono">
-                        {mounted ? user?.email || "" : ""}
-                      </span>
+                      {(!user?.isAnonymous) && (
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[130px] font-mono">
+                          {mounted ? user?.email || "" : ""}
+                        </span>
+                      )}
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
@@ -164,25 +165,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   <DropdownMenuLabel className="px-3 py-2 border-b border-border/40">
                     <p className="text-sm font-semibold text-foreground">
-                      {user?.name || "My Account"}
+                      {user?.isAnonymous ? "Guest Session" : (user?.name || "My Account")}
                     </p>
-                    <p className="text-xs text-muted-foreground font-normal truncate font-mono">
-                      {user?.email}
-                    </p>
+                    {!user?.isAnonymous && (
+                      <p className="text-xs text-muted-foreground font-normal truncate font-mono">
+                        {user?.email}
+                      </p>
+                    )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="my-1" />
-                  <DropdownMenuItem asChild className="rounded-lg m-1 px-3 py-2 cursor-pointer">
-                    <Link href="/settings" className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />{" "}
-                      <span>Profile & Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
+
+                  {user?.isAnonymous ? (
+                    <DropdownMenuItem asChild className="rounded-lg m-1 px-3 py-2 cursor-pointer bg-primary/10 text-primary focus:bg-primary/20 focus:text-primary font-medium">
+                      <Link href="/login" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />{" "}
+                        <span className="text-balance">Sign in to save your progress</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem asChild className="rounded-lg m-1 px-3 py-2 cursor-pointer">
+                      <Link href="/settings" className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />{" "}
+                        <span>Profile & Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="rounded-lg m-1 px-3 py-2 text-destructive focus:text-destructive focus:bg-destructive/10 flex items-center gap-2 cursor-pointer"
                   >
-                    <LogOut className="h-4 w-4" /> <span>Log out</span>
+                    <LogOut className="h-4 w-4" /> <span>{user?.isAnonymous ? "Leave Session" : "Log out"}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

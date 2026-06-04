@@ -5,6 +5,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
+import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "~/components/ui/alert-dialog";
 import { SearchIcon, PlusIcon } from "lucide-react";
 import { useEvents } from "~/hooks/use-events";
@@ -12,13 +13,11 @@ import { useDeleteEvent } from "~/hooks/use-delete-event";
 import { EventCard } from "./event-card";
 import { LoadingSpinner } from "~/components/shared/loading-spinner";
 import { EmptyState } from "~/components/shared/empty-state";
+import { useRouter } from "next/navigation";
 import type { EventType, EventStatus } from "@repo/trpc/server/modules/events";
 
-interface EventListProps {
-	onCreateClick?: () => void;
-}
-
-export function EventList({ onCreateClick }: EventListProps) {
+export function EventList() {
+	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [typeFilter, setTypeFilter] = useState<EventType | "all">("all");
 	const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all");
@@ -95,19 +94,19 @@ export function EventList({ onCreateClick }: EventListProps) {
 						<SelectItem value="completed">Completed</SelectItem>
 					</SelectContent>
 				</Select>
-				{onCreateClick && (
-					<Button onClick={onCreateClick} className="shrink-0">
-						<PlusIcon className="size-4" />
+				<Link href="/events/create" className="shrink-0 w-full sm:w-auto">
+					<Button className="w-full">
+						<PlusIcon className="size-4 mr-2" />
 						Create Event
 					</Button>
-				)}
+				</Link>
 			</div>
 
 			{filteredEvents.length === 0 ? (
 				<EmptyState
 					title="No events found"
 					description={searchQuery ? "Try adjusting your search or filters" : "Get started by creating your first event"}
-					action={onCreateClick ? { label: "Create Event", onClick: onCreateClick } : undefined}
+					action={{ label: "Create Event", onClick: () => router.push("/events/create") }}
 				/>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

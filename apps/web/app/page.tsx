@@ -13,6 +13,8 @@ import {
   Gauge,
   MessageSquare,
   ChevronRight,
+  Palette,
+  User,
 } from "lucide-react";
 
 export default function Home() {
@@ -22,6 +24,15 @@ export default function Home() {
   const handleSignOut = async () => {
     await authClient.signOut();
     router.refresh();
+  };
+
+  const handleAnonymousSignIn = async () => {
+    try {
+      await authClient.signIn.anonymous();
+      router.push("/events");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -92,27 +103,39 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 pt-4">
+            <div className="flex flex-wrap justify-center pt-4">
               {session?.user ? (
                 <Link href="/events">
-                  <Button size="lg" className="h-11 px-8">
+                  <Button size="lg" className="h-11 px-8 shadow-lg shadow-primary/20">
                     Start Now
-                    <ChevronRight />
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               ) : (
-                <>
-                  <Link href="/signup">
-                    <Button size="lg" className="h-11 px-8">
-                      Get Started Free
+                <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Link href="/signup">
+                      <Button size="lg" className="h-11 px-8 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">
+                        Get Started Free
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="lg" 
+                      variant="secondary" 
+                      className="h-11 px-8 hover:bg-secondary/80 transition-colors flex items-center gap-2"
+                      onClick={handleAnonymousSignIn}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Try as Guest</span>
                     </Button>
-                  </Link>
-                  <Link href="/login">
-                    <Button size="lg" variant="outline" className="h-11 px-8">
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-primary hover:underline font-medium">
                       Sign In
-                    </Button>
-                  </Link>
-                </>
+                    </Link>
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -129,13 +152,19 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: <MessageSquare className="h-6 w-6" suppressHydrationWarning />,
                 title: "Live Chat Rooms",
                 description:
                   "Create real-time banter rooms for participants to engage and discuss results instantly.",
+              },
+              {
+                icon: <Palette className="h-6 w-6" suppressHydrationWarning />,
+                title: "Custom Themes",
+                description:
+                  "Personalize your events with stunning Unsplash backgrounds or solid color themes.",
               },
               {
                 icon: <Users className="h-6 w-6" suppressHydrationWarning />,
@@ -176,17 +205,29 @@ export default function Home() {
           <p className="text-muted-foreground text-lg">
             Start creating interactive forms and polls today. No credit card required.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/signup">
-              <Button size="lg" className="h-11 px-8">
-                Get Started Free
+          <div className="flex flex-col items-center gap-4 w-full">
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/signup">
+                <Button size="lg" className="h-11 px-8 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">
+                  Get Started Free
+                </Button>
+              </Link>
+              <Button 
+                size="lg" 
+                variant="secondary" 
+                className="h-11 px-8 hover:bg-secondary/80 transition-colors flex items-center gap-2"
+                onClick={handleAnonymousSignIn}
+              >
+                <User className="h-4 w-4" />
+                <span>Try as Guest</span>
               </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="h-11 px-8">
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary hover:underline font-medium">
                 Sign In
-              </Button>
-            </Link>
+              </Link>
+            </p>
           </div>
         </div>
       </section>
