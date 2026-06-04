@@ -79,7 +79,7 @@ export function setupSocket(server: HttpServer): IOServer {
 			origin: allowedOrigin,
 			credentials: true,
 		},
-		transports: ["websocket", "polling"],
+		transports: ["polling", "websocket"],
 	});
 
 	// Better Auth session parsing middleware

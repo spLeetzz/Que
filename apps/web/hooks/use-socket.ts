@@ -38,16 +38,41 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 	const [onlineUsers, setOnlineUsers] = useState<SocketUser[]>([]);
 	const [isFallbackActive, setIsFallbackActive] = useState(false);
 	const [participantStatuses, setParticipantStatuses] = useState<Record<string, string>>({});
-	
+
 	const socketRef = useRef<Socket | null>(null);
 	const trpcUtils = trpc.useUtils();
 
-	// Function to update user's own status (typing, filling, idle)
-	const updateStatus = useCallback((status: string) => {
-		if (socketRef.current && isConnected && participantId) {
-			socketRef.current.emit("status:update", { eventId, status, participantId });
+	// Stable refs — updated every render, never cause effect re-runs
+	const participantIdRef = useRef(participantId);
+	const onResponseNewRef = useRef(onResponseNew);
+	const onItemCreatedRef = useRef(onItemCreated);
+	const onItemUpdatedRef = useRef(onItemUpdated);
+	const onItemDeletedRef = useRef(onItemDeleted);
+
+	useEffect(() => {
+		participantIdRef.current = participantId;
+		onResponseNewRef.current = onResponseNew;
+		onItemCreatedRef.current = onItemCreated;
+		onItemUpdatedRef.current = onItemUpdated;
+		onItemDeletedRef.current = onItemDeleted;
+	});
+
+	// Re-emit join:room when participantId resolves, without reconnecting
+	useEffect(() => {
+		if (socketRef.current?.connected && participantId && eventId) {
+			socketRef.current.emit("join:room", { eventId, participantId });
 		}
-	}, [eventId, isConnected, participantId]);
+	}, [participantId, eventId]);
+
+	const updateStatus = useCallback((status: string) => {
+		if (socketRef.current?.connected && participantIdRef.current) {
+			socketRef.current.emit("status:update", {
+				eventId,
+				status,
+				participantId: participantIdRef.current,
+			});
+		}
+	}, [eventId]);
 
 	useEffect(() => {
 		if (!eventId || !enabled) return;
@@ -56,7 +81,6 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			? env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
 			: "http://localhost:8000";
 
-		// Initialize socket connection
 		const socket = io(socketUrl, {
 			withCredentials: true,
 			transports: ["websocket", "polling"],
@@ -68,7 +92,6 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 
 		socketRef.current = socket;
 
-		// Connection fallback timer
 		let fallbackTimer: NodeJS.Timeout;
 		if (enableFallback) {
 			fallbackTimer = setTimeout(() => {
@@ -83,11 +106,10 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			setIsConnected(true);
 			setIsFallbackActive(false);
 			if (fallbackTimer) clearTimeout(fallbackTimer);
-			
-			// Join the room for this event
-			socket.emit("join:room", { eventId, participantId: participantId ?? undefined });
 
-			// Immediately invalidate/refetch current analytics and response queries
+			// Use ref so this doesn't need participantId in deps
+			socket.emit("join:room", { eventId, participantId: participantIdRef.current ?? undefined });
+
 			trpcUtils.analytics.getOverview.invalidate({ eventId });
 			trpcUtils.analytics.getTimeline.invalidate({ eventId });
 			trpcUtils.analytics.getAbandonmentFunnel.invalidate({ eventId });
@@ -121,30 +143,23 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			}));
 		});
 
-		// Handle live responses / poll filling submissions
 		socket.on("response:new", (payload) => {
 			console.log("New live response recorded:", payload);
-			
-			// Auto-invalidate tRPC queries to update the UI instantly
 			trpcUtils.responses.listByEvent.invalidate({ eventId });
 			trpcUtils.events.getByIdOrSlug.invalidate({ identifier: eventId });
-			
-						trpcUtils.analytics.getOverview.invalidate({ eventId });
+			trpcUtils.analytics.getOverview.invalidate({ eventId });
 			trpcUtils.analytics.getTimeline.invalidate({ eventId });
 			trpcUtils.analytics.getAbandonmentFunnel.invalidate({ eventId });
 			trpcUtils.analytics.getQuestionAnalytics.invalidate({ eventId });
 			trpcUtils.analytics.getParticipantJourneys.invalidate({ eventId });
 			trpcUtils.analytics.getFullAnalytics.invalidate({ eventId });
-			
-						trpcUtils.answers.listByResponse.invalidate();
-			
-			if (onResponseNew) onResponseNew(payload);
+			trpcUtils.answers.listByResponse.invalidate();
+			onResponseNewRef.current?.(payload);
 		});
 
 		socket.on("response:count", (payload: { totalResponses: number }) => {
 			console.log(`Total responses for event ${eventId}: ${payload.totalResponses}`);
 			trpcUtils.events.getByIdOrSlug.invalidate({ identifier: eventId });
-			
 			trpcUtils.analytics.getOverview.invalidate({ eventId });
 			trpcUtils.analytics.getTimeline.invalidate({ eventId });
 			trpcUtils.analytics.getAbandonmentFunnel.invalidate({ eventId });
@@ -157,7 +172,6 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			console.log("New participant joined live:", payload.participant);
 			trpcUtils.participants.listByEvent.invalidate({ eventId });
 			trpcUtils.events.getByIdOrSlug.invalidate({ identifier: eventId });
-			
 			trpcUtils.analytics.getOverview.invalidate({ eventId });
 			trpcUtils.analytics.getTimeline.invalidate({ eventId });
 			trpcUtils.analytics.getAbandonmentFunnel.invalidate({ eventId });
@@ -166,26 +180,22 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			trpcUtils.analytics.getFullAnalytics.invalidate({ eventId });
 		});
 
-		// Handle live chat / banter and item adjustments
 		socket.on("item:created", (payload: { item: any }) => {
 			console.log("New item added live:", payload.item);
-			
-			// Auto-invalidate item queries so lists automatically refresh
 			trpcUtils.items.listByEvent.invalidate({ eventId });
-			
-			if (onItemCreated) onItemCreated(payload.item);
+			onItemCreatedRef.current?.(payload.item);
 		});
 
 		socket.on("item:updated", (payload: { item: any }) => {
 			console.log("Item updated live:", payload.item);
 			trpcUtils.items.listByEvent.invalidate({ eventId });
-			if (onItemUpdated) onItemUpdated(payload.item);
+			onItemUpdatedRef.current?.(payload.item);
 		});
 
 		socket.on("item:deleted", (payload: { itemId: string }) => {
 			console.log("Item deleted live:", payload.itemId);
 			trpcUtils.items.listByEvent.invalidate({ eventId });
-			if (onItemDeleted) onItemDeleted(payload.itemId);
+			onItemDeletedRef.current?.(payload.itemId);
 		});
 
 		socket.on("error", (payload: { message: string }) => {
@@ -214,9 +224,9 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 			socket.disconnect();
 			socketRef.current = null;
 		};
-	}, [eventId, enabled, enableFallback, participantId, trpcUtils, onResponseNew, onItemCreated, onItemUpdated, onItemDeleted]);
+		// participantId intentionally omitted — handled via ref + separate effect
+	}, [eventId, enabled, enableFallback, trpcUtils]);
 
-	// Return full reactive controls for developers building event pages
 	return {
 		isConnected,
 		isFallbackActive,
@@ -225,16 +235,14 @@ export function useSocket(eventId: string, options: UseSocketOptions = {}) {
 		participantStatuses,
 		updateStatus,
 		socket: socketRef.current,
-		// Query options helper for developers:
-		// If fallback is active, configure tRPC query with a refetchInterval
 		queryOptions: isFallbackActive
 			? {
-					refetchInterval: fallbackInterval,
-					refetchOnWindowFocus: true,
-					refetchOnMount: true,
-				}
+				refetchInterval: fallbackInterval,
+				refetchOnWindowFocus: true,
+				refetchOnMount: true,
+			}
 			: {
-					refetchInterval: false,
-				},
+				refetchInterval: false,
+			},
 	};
 }
