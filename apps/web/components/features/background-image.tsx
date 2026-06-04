@@ -46,6 +46,8 @@ export const BackgroundImage = memo(function BackgroundImage({
 
   return (
     <div
+      aria-hidden="true"
+      suppressHydrationWarning
       className={cn(
         "fixed inset-0 bg-cover bg-center pointer-events-none transition-opacity duration-1000",
         loaded ? (type === "picsum" ? "opacity-40" : "opacity-15") : "opacity-0",

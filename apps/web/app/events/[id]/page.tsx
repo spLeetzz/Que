@@ -140,23 +140,27 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (event && !isLoadingEvent && !tabInitialized) {
       const tabParam = searchParams.get("tab");
-      const validTabs =
-        event.type === "banter"
-          ? ["chat", "polls", "results", "settings"]
-          : ["participate", "results", "manage", "settings"];
+      const isBanter = event.type === "banter";
+      const validTabs = isBanter
+        ? ["chat", "polls", "results", "settings"]
+        : ["participate", "results", "manage", "settings"];
 
       if (tabParam && validTabs.includes(tabParam)) {
         // Check if user has access to this tab
         if ((tabParam === "manage" || tabParam === "settings") && !isCreator) {
-          setActiveTab(event.type === "banter" ? "chat" : "participate");
+          setActiveTab(isBanter ? "chat" : "participate");
         } else {
           setActiveTab(tabParam);
         }
+      } else if (isBanter) {
+        // Banter always opens on chat — there is no "manage" tab for banter,
+        // so this applies equally to creators and participants.
+        setActiveTab("chat");
       } else if (isCreator) {
-        // Creators default to manage
+        // Non-banter creators default to manage
         setActiveTab("manage");
       } else {
-        setActiveTab(event.type === "banter" ? "chat" : "participate");
+        setActiveTab("participate");
       }
       setTabInitialized(true);
     }
@@ -305,8 +309,10 @@ export default function PublicEventPage({ params }: { params: Promise<{ id: stri
   const waitingForDetails =
     !!eventId && (isLoadingItems || (event?.type === "banter" && isLoadingParticipants));
 
-  // Loading gate, wait for event + dependent data
-  if (!isMounted || isLoadingEvent || waitingForDetails) {
+  // Loading gate, wait for event + dependent data.
+  // Also wait for tabInitialized so the tabs don't flash with the wrong default
+  // (activeTab starts as "participate" but banter needs "chat").
+  if (!isMounted || isLoadingEvent || waitingForDetails || !tabInitialized) {
     return (
       <div
         className="flex h-screen items-center justify-center bg-background"
