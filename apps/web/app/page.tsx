@@ -125,7 +125,7 @@ export default function Home() {
                       className="h-11 px-8 hover:bg-secondary/80 transition-colors flex items-center gap-2"
                       onClick={handleAnonymousSignIn}
                     >
-                      <User className="h-4 w-4" />
+                      <User className="h-4 w-4" suppressHydrationWarning />
                       <span>Try as Guest</span>
                     </Button>
                   </div>
@@ -218,7 +218,7 @@ export default function Home() {
                 className="h-11 px-8 hover:bg-secondary/80 transition-colors flex items-center gap-2"
                 onClick={handleAnonymousSignIn}
               >
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4" suppressHydrationWarning />
                 <span>Try as Guest</span>
               </Button>
             </div>
