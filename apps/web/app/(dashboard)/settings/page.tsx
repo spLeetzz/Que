@@ -199,7 +199,7 @@ export default function SettingsPage() {
                   placeholder={user?.isAnonymous ? "Sign in to set a name" : (user?.name || "Enter your name")}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  disabled={user?.isAnonymous}
+                  disabled={user?.isAnonymous ?? false}
                 />
                 <p className="text-xs text-muted-foreground">This is how you appear across the platform</p>
               </div>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <Button onClick={handleSaveProfile} disabled={isSavingProfile || !displayName.trim() || user?.isAnonymous}>
+              <Button onClick={handleSaveProfile} disabled={isSavingProfile || !displayName.trim() || (user?.isAnonymous ?? false)}>
                 {isSavingProfile ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : "Save Profile"}
               </Button>
             </CardContent>
